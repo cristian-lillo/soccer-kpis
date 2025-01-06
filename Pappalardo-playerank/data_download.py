@@ -10,29 +10,30 @@ Please cite the source as:
 
 """
 
-import requests, zipfile, json, io
+import io
+import zipfile
 
+import requests
 
 dataset_links = {
-
-'matches' : 'https://ndownloader.figshare.com/files/14464622',
-'events' : 'https://ndownloader.figshare.com/files/14464685',
-'players' : 'https://ndownloader.figshare.com/files/15073721',
-'teams': 'https://ndownloader.figshare.com/files/15073697',
+    "matches": "https://ndownloader.figshare.com/files/14464622",
+    "events": "https://ndownloader.figshare.com/files/14464685",
+    "players": "https://ndownloader.figshare.com/files/15073721",
+    "teams": "https://ndownloader.figshare.com/files/15073697",
 }
 
-
-r = requests.get(dataset_links['matches'], stream=True)
+# Download matches and events data from zip files
+r = requests.get(dataset_links["matches"], stream=True)
 z = zipfile.ZipFile(io.BytesIO(r.content))
 z.extractall("data/matches")
 
-r = requests.get(dataset_links['events'], stream=True)
+r = requests.get(dataset_links["events"], stream=True)
 z = zipfile.ZipFile(io.BytesIO(r.content))
 z.extractall("data/events")
-#
-r = requests.get(dataset_links['teams'], stream=False)
-print (r.text, file=open('data/teams.json','w'))
 
+# Download teams and players data
+r = requests.get(dataset_links["teams"], stream=False)
+print(r.text, file=open("data/teams.json", "w"))
 
-r = requests.get(dataset_links['players'], stream=False)
-print (r.text, file=open('data/players.json','w'))
+r = requests.get(dataset_links["players"], stream=False)
+print(r.text, file=open("data/players.json", "w"))
