@@ -1,3 +1,5 @@
-notebook
+jupyter
+pandas
 scipy
 statsbombpy
+tqdm
