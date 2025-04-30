@@ -6,18 +6,14 @@ def subindex_1(expected_goals) -> float:
     return 0
 
 
-def subindex_2(player_minutes, team_minutes, team_result) -> float:
+def subindex_2(player_minutes, team_minutes, home_goals, away_goals) -> float:
     """Calculates Subindex 2 as team points multiplied by the ratio of player minutes to total team minutes."""
-    points_map = {
-        "win": utils.POINTS_FOR_WIN,
-        "draw": utils.POINTS_FOR_DRAW,
-        "loss": utils.POINTS_FOR_LOSS,
-    }
-
-    if team_result in points_map:
-        return points_map[team_result] * (player_minutes / team_minutes)
-    else:
-        raise ValueError("Invalid team result. Must be 'win', 'draw', or 'loss'.")
+    if home_goals > away_goals:
+        return utils.POINTS_FOR_WIN * (player_minutes / team_minutes)
+    elif home_goals == away_goals:
+        return utils.POINTS_FOR_DRAW * (player_minutes / team_minutes)
+    else:  # home_goals < away_goals
+        return utils.POINTS_FOR_LOSS * (player_minutes / team_minutes)
 
 
 def subindex_3(player_minutes, team_minutes) -> float:
@@ -43,7 +39,7 @@ def subindex_6(clean_sheets, position) -> float:
 def index_score(stats):
     """Computes the final player index score by weighting all subindices."""
     i1 = subindex_1(stats)
-    i2 = subindex_2(stats["minutes_played"], stats["team_minutes"], stats["team_result"])
+    i2 = subindex_2(stats["minutes_played"], stats["team_minutes"], stats["home_goals"], stats["away_goals"])
     i3 = subindex_3(stats["minutes_played"], stats["team_minutes"])
     i4 = subindex_4(stats["goals"])
     i5 = subindex_5(stats["assists"])

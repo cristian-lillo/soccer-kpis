@@ -6,7 +6,8 @@ player_example = {
     "minutes_played": 90,
     "goals": 2,
     "assists": 1,
-    "team_result": "win",
+    "home_goals": 4,
+    "away_goals": 2,
     "team_minutes": 990,
     "clean_sheets": 0,
 }
