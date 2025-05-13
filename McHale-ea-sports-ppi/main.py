@@ -27,7 +27,7 @@ def get_competitions_with_360_data() -> list:
     return competition_season_pairs
 
 
-def get_competition_matches(competition_id: int, season_id: int) -> pd.DataFrame:
+def get_competition_matches(competition_id: int, season_id: int) -> list[int]:
     """
     Extract matches for a given competition and season.
     """
@@ -36,18 +36,36 @@ def get_competition_matches(competition_id: int, season_id: int) -> pd.DataFrame
     matches_file_path = competition_dir / f"{season_id}.json"
     matches_df = pd.read_json(matches_file_path)
 
-    return matches_df
+    # Get match IDs
+    match_ids = matches_df["match_id"].to_list()
+
+    return match_ids
 
 
 def group_match_events_by_player(match_id: int):
-    return None  # Placeholder for actual implementation
+    """
+    Group match events by player for a given match ID.
+    """
+    # Create Events DataFrame from JSON file
+    events_file_path = events_dir / f"{match_id}.json"
+    events_df = pd.read_json(events_file_path)
+
+    # Group events by player
+    player_events_df = events_df.groupby("player")
+    print(player_events_df)
+
+    return player_events_df
 
 
 def main():
     competition_season_pairs = get_competitions_with_360_data()
 
     for competition_id, season_id in competition_season_pairs:
-        matches_df = get_competition_matches(competition_id, season_id)
+        match_ids = get_competition_matches(competition_id, season_id)
+
+        for match_id in match_ids:
+            # Group events by player for each match
+            player_events_df = group_match_events_by_player(match_id)
 
     # Example player data
     player_example = {
