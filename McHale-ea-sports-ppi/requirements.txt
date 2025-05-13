@@ -1,5 +1,5 @@
 jupyter
 pandas
-scipy
+socceraction
 statsbombpy
 tqdm
