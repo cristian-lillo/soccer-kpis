@@ -1,1 +1,4 @@
+jupyter
+pandas
 socceraction
+socceraction[statsbomb]
