@@ -1,4 +1,7 @@
 jupyter
+multimethod == 1.12
 pandas
 socceraction
 socceraction[statsbomb]
+tables
+tqdm
