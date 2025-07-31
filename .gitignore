@@ -9,3 +9,10 @@ __pycache__/
 .venv
 env/
 venv/
+
+# Visual Studio Code
+.vscode/
+
+# Data folders
+data/
+**/data/
