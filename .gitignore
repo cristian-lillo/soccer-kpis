@@ -24,6 +24,8 @@ venv/
 # Visual Studio Code
 .vscode/
 
-# Data folders
-data/
-**/data/
+# Data providers
+/data/*/
+
+# Model data folders
+/*/data/
