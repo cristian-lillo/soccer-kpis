@@ -17,12 +17,15 @@ This research project focuses on developing and validating advanced methodologie
 
 ```
 soccer-kpis/
-├── data/                    # Data from various providers (see data/README.md)
-├── Decroos-socceraction/    # VAEP and socceraction implementations
-├── Lillo/                   # Custom analysis and KPI development
-├── McHale-ea-sports-ppi/    # EA Sports Player Performance Index
-├── Pappalardo-playerank/    # PlayerRank methodology implementation
-└── requirements.txt         # Project dependencies
+├── data/                   # Data from various providers (see data/README.md)
+├── models/                 # Implementations of football analytics methodologies
+│   ├── ea-sports-ppi/          # EA Sports Player Performance Index
+│   ├── playerank/              # PlayerRank methodology implementation
+│   └── vaep/                   # VAEP and SPADL implementations
+├── notebooks/              # Jupyter notebooks for data analysis and exploration
+├── scripts/                # Utility scripts for data processing and configuration
+├── requirements.txt        # Project dependencies
+└── README.md               # This file
 ```
 
 ## Installation
