@@ -1,4 +1,0 @@
-jupyter
-kloppy
-mplsoccer
-pandas
