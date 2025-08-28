@@ -1,5 +1,0 @@
-jupyter
-pandas
-socceraction
-statsbombpy
-tqdm
