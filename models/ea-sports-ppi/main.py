@@ -58,15 +58,6 @@ def group_match_events_by_player(match_id: int):
 
 
 def main():
-    competition_season_pairs = get_competitions_with_360_data()
-
-    for competition_id, season_id in competition_season_pairs:
-        match_ids = get_competition_matches(competition_id, season_id)
-
-        for match_id in match_ids:
-            # Group events by player for each match
-            player_events_df = group_match_events_by_player(match_id)
-
     # Example player data
     player_example = {
         "position": "ST",
