@@ -77,6 +77,14 @@ def main():
         "away_goals": 2,
         "team_minutes": 990,
         "clean_sheets": 0,
+        "crosses": 3,
+        "dribbles": 1,
+        "passes": 20,
+        "opp_interceptions": 3,
+        "opp_yellows": 1,
+        "opp_reds": 0,
+        "opp_tackle_win_ratio": 0.2,
+        "opp_clearances": 1,
     }
 
     # Calculate and print the player index
