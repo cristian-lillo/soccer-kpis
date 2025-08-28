@@ -1,9 +1,14 @@
 import utils
 
 
-def subindex_1(expected_goals) -> float:
+def subindex_1(stats) -> float:
     """Calculates Subindex 1 as the sum of contributions multiplied by their expected impact on team league points."""
-    return 0
+    score = utils.MODEL_COEFFICIENTS["constant"]
+    for action, coeff in utils.MODEL_COEFFICIENTS.items():
+        if action != "constant":
+            count = stats.get(action, 0)
+            score += coeff * count
+    return score
 
 
 def subindex_2(player_minutes, team_minutes, home_goals, away_goals) -> float:
