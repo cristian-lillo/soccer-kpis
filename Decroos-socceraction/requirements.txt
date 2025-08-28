@@ -1,0 +1,9 @@
+jupyter
+multimethod == 1.12
+pandas
+scikit-learn
+socceraction
+socceraction[statsbomb]
+tables
+tqdm
+xgboost
