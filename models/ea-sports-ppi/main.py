@@ -1,63 +1,61 @@
+"""
+Module to calculate the EA Sports Player Performance Index (PPI) and group match events by player.
+"""
+
+import sys
+from pathlib import Path
+
 import pandas as pd
+from kloppy import statsbomb, wyscout
 
-import index_calculator
-import utils
+from index_calculator import index_score
 
-data_dir = utils.DATA_DIR
-matches_dir = utils.MATCHES_DIR
-lineups_dir = utils.LINEUPS_DIR
-events_dir = utils.EVENTS_DIR
-three_sixty_dir = utils.THREE_SIXTY_DIR
+# Add the project root to the Python path
+sys.path.append(str(Path(__file__).parents[2]))
+from config import project_paths
 
 
-def get_competitions_with_360_data() -> list:
-    """
-    Extract competitions with available 360 data and return a list of (competition_id, season_id) tuples.
-    """
-    # Create Competitions DataFrame from JSON file
-    competitions_file_path = data_dir / "competitions.json"
-    competitions_df = pd.read_json(competitions_file_path)
+def get_player_data(match_id: int, player_id: int, provider="statsbomb") -> pd.DataFrame:
+    """Fetches player data from the specified provider for a given match and player ID."""
+    # Load dataset based on provider
+    if provider == "statsbomb":
+        dataset = statsbomb.load(
+            event_data=project_paths.STATSBOMB_EVENTS_DIR / f"{match_id}.json",
+            lineup_data=project_paths.STATSBOMB_LINEUPS_DIR / f"{match_id}.json",
+        )
+    elif provider == "wyscout":
+        dataset = wyscout.load(
+            event_data=project_paths.WYSCOUT_PROCESSED_V2_DIR / f"{match_id}.json",
+        )
+    else:
+        raise ValueError("Unsupported provider. Use 'statsbomb' or 'wyscout'.")
 
-    # Filter out competitions without 360 data
-    competitions_df.dropna(subset=["match_available_360"], inplace=True)
+    # Filter columns from the dataset
+    filtered_dataset = dataset.to_df(
+        "player_id",
+        "player",
+        "team_id",
+        "team",
+        "event_type",
+        "event_name",
+        "result",
+        "success",
+    )
 
-    # Get the competition and season IDs
-    competition_season_pairs = list(competitions_df[["competition_id", "season_id"]].itertuples(index=False, name=None))
+    print(f"### DataFrame:\n{filtered_dataset.head(10)}\n")
+    print(f"### Description:\n{filtered_dataset.describe()}\n")
+    print(f"### Info:\n{filtered_dataset.info()}\n")
 
-    return competition_season_pairs
-
-
-def get_competition_matches(competition_id: int, season_id: int) -> list[int]:
-    """
-    Extract matches for a given competition and season.
-    """
-    # Create Matches DataFrame from JSON file
-    competition_dir = matches_dir / f"{competition_id}"
-    matches_file_path = competition_dir / f"{season_id}.json"
-    matches_df = pd.read_json(matches_file_path)
-
-    # Get match IDs
-    match_ids = matches_df["match_id"].to_list()
-
-    return match_ids
-
-
-def group_match_events_by_player(match_id: int):
-    """
-    Group match events by player for a given match ID.
-    """
-    # Create Events DataFrame from JSON file
-    events_file_path = events_dir / f"{match_id}.json"
-    events_df = pd.read_json(events_file_path)
-
-    # Group events by player
-    player_events_df = events_df.groupby("player")
-    print(player_events_df)
-
-    return player_events_df
+    return filtered_dataset
 
 
 def main():
+    # StatsBomb match and player IDs for testing (UEFA Euro 2024 Final - Lamine Yamal)
+    match_id = 3943043
+    player_id = 316046
+
+    get_player_data(match_id, player_id)
+
     # Example player data
     player_example = {
         "position": "ST",
@@ -79,7 +77,7 @@ def main():
     }
 
     # Calculate and print the player index
-    player_index = index_calculator.index_score(player_example)
+    player_index = index_score(player_example)
     print(f"Player Index: {player_index:.2f}")
 
 
