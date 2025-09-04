@@ -1,0 +1,17 @@
+[project]
+name = "soccer-kpis"
+dependencies=[
+    "jupyter",
+    "kloppy",
+    "mplsoccer",
+    "pandas",
+]
+requires-python = "==3.12.10"
+authors = [
+    {name = "Cristian Lillo", email = "cristian.lillo@ug.uchile.cl"},
+]
+description = "Soccer Key Performance Indicators analysis"
+readme = "README.md"
+
+[tool.ruff.lint.isort]
+known-first-party = ["index_calculator", "config"]
