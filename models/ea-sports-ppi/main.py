@@ -8,7 +8,7 @@ from pathlib import Path
 import pandas as pd
 from kloppy import statsbomb, wyscout
 
-from index_calculator import index_score
+from .index_calculator import index_score
 
 # Add the project root to the Python path
 sys.path.append(str(Path(__file__).parents[2]))
