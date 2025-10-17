@@ -1,4 +1,7 @@
 jupyter
 kloppy
 mplsoccer
+multimethod==1.12  # To fix ImportError: cannot import name 'overload' from 'multimethod'
 pandas
+socceraction
+socceraction[statsbomb]
