@@ -2,17 +2,13 @@
 Module to calculate the EA Sports Player Performance Index (PPI) for any match and player.
 """
 
-import sys
 import warnings
-from pathlib import Path
 
 import pandas as pd
-from kloppy import statsbomb, wyscout
+from kloppy import statsbomb
 from kloppy.domain import EventDataset
 
-# Add the project root to the Python path
-sys.path.append(str(Path(__file__).parents[2]))
-from config import project_paths
+from config import paths, tournaments
 
 # Ignore specific warnings for cleaner output
 warnings.filterwarnings(
@@ -28,25 +24,18 @@ warnings.filterwarnings(
 )
 
 
-def load_match_data(match_id: int, provider: str = "statsbomb") -> tuple[EventDataset, pd.DataFrame, list]:
+def load_match_data(match_id: int) -> tuple[EventDataset, pd.DataFrame, list]:
     """Load match data from the specified provider."""
-    # Load dataset based on provider
-    if provider == "statsbomb":
-        dataset = statsbomb.load(
-            event_data=project_paths.STATSBOMB_EVENTS_DIR / f"{match_id}.json",
-            lineup_data=project_paths.STATSBOMB_LINEUPS_DIR / f"{match_id}.json",
-        )
-    elif provider == "wyscout":
-        dataset = wyscout.load(
-            event_data=project_paths.WYSCOUT_PROCESSED_V2_DIR / f"{match_id}.json",
-        )
-    else:
-        raise ValueError("Unsupported provider. Use 'statsbomb' or 'wyscout'.")
+    # Load StatsBomb data
+    dataset = statsbomb.load(
+        event_data=paths.STATSBOMB_EVENTS_DIR / f"{match_id}.json",
+        lineup_data=paths.STATSBOMB_LINEUPS_DIR / f"{match_id}.json",
+    )
 
     # Filter columns from the dataset
     filtered_df = dataset.to_df(
         "player_id",
-        "player",
+        "player",  # type: ignore
         "team_id",
         "team",
         "event_id",
@@ -421,10 +410,10 @@ def calculate_ppi_for_players(player_metrics: dict, team_metrics: dict) -> pd.Da
     return ppi_df
 
 
-def calculate_ppi_for_match(match_id: int, provider: str = "statsbomb") -> pd.DataFrame:
+def calculate_ppi_for_match(match_id: int) -> pd.DataFrame:
     """Calculate PPI for all players in a match"""
     # Load match data
-    dataset, players_df, minutes_dataset = load_match_data(match_id, provider)
+    dataset, players_df, minutes_dataset = load_match_data(match_id)
 
     # Extract metrics
     player_metrics = extract_player_metrics(dataset, minutes_dataset, players_df)
@@ -440,16 +429,68 @@ def calculate_ppi_for_match(match_id: int, provider: str = "statsbomb") -> pd.Da
     return ppi_df
 
 
+def calculate_ppi_for_tournament(tournament: dict) -> pd.DataFrame:
+    """Calculate PPI for all players in a tournament given a list of match IDs"""
+    match_ids = tournaments.get_all_match_ids(tournament)
+
+    all_players_ppi_df = pd.DataFrame(
+        columns=[
+            "player",
+            "team",
+            "position",
+            "index_score",
+            "minutes_played",
+            "goals",
+            "assists",
+            "crosses",
+            "dribbles",
+            "passes",
+        ]
+    )
+
+    for i, match_id in enumerate(match_ids):
+        print(f"Calculating PPI for match {match_id}... ({i + 1}/{len(match_ids)})")
+
+        ppi_df = calculate_ppi_for_match(match_id)
+        all_players_ppi_df = pd.concat([all_players_ppi_df, ppi_df], ignore_index=True)
+
+    # Merge PPI scores for players appearing in multiple matches by averaging their scores
+    all_players_ppi_df = (
+        all_players_ppi_df.groupby(
+            ["player", "team"],
+            as_index=False,
+        )
+        .agg(
+            {
+                "index_score": "avg",
+                "minutes_played": "sum",
+                "goals": "sum",
+                "assists": "sum",
+                "crosses": "sum",
+                "dribbles": "sum",
+                "passes": "sum",
+            }
+        )
+        .sort_values("index_score", ascending=False)
+        .reset_index(drop=True)
+    )
+    all_players_ppi_df.insert(0, "rank", range(1, len(all_players_ppi_df) + 1))
+
+    # Save index scores to CSV
+    output_filename = paths.EA_SPORTS_PPI_OUTPUT_DIR / f"{tournament['label']}_ppi_scores.csv"
+    all_players_ppi_df.to_csv(output_filename, index=False)
+
+    return all_players_ppi_df
+
+
 def main():
     """Main function to demonstrate PPI calculation"""
-    # StatsBomb match ID for testing (UEFA Euro 2024 Final)
-    match_id = 3943043
-    print(f"Calculating PPI for match {match_id}...\n")
+    # Example: Calculate PPI for UEFA Euro 2024 tournament
+    tournament = tournaments.EURO_2024
+    ppi_df = calculate_ppi_for_tournament(tournament)
 
-    # Calculate PPI for all players in the match
-    ppi_df = calculate_ppi_for_match(match_id)
-    print("All players ranked by PPI score:\n")
-    print(ppi_df[["rank", "player", "team", "position", "index_score"]])
+    print(f"\nTop 10 Players in {tournament['label']} by EA Sports PPI:")
+    print(ppi_df.head(10))
 
 
 if __name__ == "__main__":
