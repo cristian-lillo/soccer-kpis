@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "soccer-kpis"
+version = "0.1.0"
+dependencies = [
+    "jupyter",
+    "kloppy",
+    "mplsoccer",
+    "multimethod==1.12",  # To fix ImportError: cannot import name 'overload' from 'multimethod'
+    "pandas",
+    "socceraction",
+    "socceraction[statsbomb]",
+]
+requires-python = ">= 3.12"
+authors = [
+    {name = "Cristian Lillo", email = "cristian.lillo@ug.uchile.cl"},
+]
+description = "A collection of models and tools to evaluate soccer players based on their in-game actions."
+readme = "README.md"
+
+[tool.setuptools]
+packages = ["config", "models", "notebooks", "scripts"]
