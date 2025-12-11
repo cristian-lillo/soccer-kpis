@@ -97,6 +97,22 @@ COPA_AMERICA_2024 = {
     "season_id": 282,
 }
 
+EUROPEAN_CLUB_LEAGUES = [
+    PREMIER_LEAGUE,
+    LA_LIGA,
+    SERIE_A,
+    BUNDESLIGA,
+    LIGUE_1,
+]
+
+NATIONAL_TEAM_TOURNAMENTS = [
+    WORLD_CUP_2018,
+    WORLD_CUP_2022,
+    EURO_2020,
+    EURO_2024,
+    COPA_AMERICA_2024,
+]
+
 
 def get_all_match_ids(tournament: dict) -> list[int]:
     """Retrieve all StatsBomb match IDs for a given tournament."""
