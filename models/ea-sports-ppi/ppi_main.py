@@ -316,15 +316,11 @@ def get_match_ppi_scores(match_id: int) -> pd.DataFrame:
     dataset, match_events_df = players.load_match_data(match_id)
 
     # Extract metrics
-
-    # Calculate index scores
-    ppi_df = calculate_ppi_for_players(player_metrics, team_metrics)
     player_metrics = extract_player_metrics(dataset, match_events_df, players_info_df)
     team_metrics = extract_team_metrics(match_events_df, team_minutes_dict)
 
-    # Convert to DataFrame and rank players
-    ppi_df = ppi_df.sort_values("index_score", ascending=False).reset_index(drop=True)
-    ppi_df.insert(0, "rank", range(1, len(ppi_df) + 1))
+    # Calculate PPI for players
+    ppi_df = calculate_players_performance_index(player_metrics, team_metrics)
 
     return ppi_df
 
