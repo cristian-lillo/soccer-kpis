@@ -93,40 +93,46 @@ def extract_player_metrics(
     Returns:
         A dictionary mapping player nicknames to their metrics.
     """
-
-
-
-
-
-
-    # Initialize dictionary to hold player metrics
     player_metrics = {}
 
-    for player_name in df["player"].unique():
-        # Filter events data for the specific player
-        player_df = df[df["player"] == player_name]
+    # Map player names to their teams and minutes played for quick access
+    nickname_mapping = dict(zip(player_info_df["player_name"], player_info_df["nickname"]))
+    team_mapping = dict(zip(player_info_df["player_name"], player_info_df["team_name"]))
+    minutes_mapping = dict(zip(player_info_df["player_name"], player_info_df["minutes_played"]))
 
-        # Obtain individual metrics
-        player_team, opponent_team = get_player_and_opponent_teams(dataset, player_df)
-        player_position = get_player_position(dataset, player_name)
-        player_minutes = get_player_minutes(minutes_dataset, player_name)
-        player_goals = len(player_df[player_df["event_type"] == "SHOT"][player_df["result"] == "GOAL"])
-        player_assists = calculate_assists_for_player(player_df, df)
-        player_crosses = len(player_df[player_df["pass_type"] == "CROSS"][player_df["success"]])
-        player_dribbles = len(player_df[player_df["event_type"] == "TAKE_ON"][player_df["success"]])
-        player_passes = len(player_df[player_df["event_type"] == "PASS"][player_df["success"]])
+    # Get assists count for all players in the match
+    assists_mapping = players.count_assists(match_events_df)
 
-        # Store metrics in dictionary
-        player_metrics[player_name] = {
+    # Get unique teams to identify opponent team
+    teams = player_info_df["team_name"].unique()
+
+    for player_name in match_events_df["player"].unique():
+        match_events_df = match_events_df.loc[match_events_df["player"] == player_name]
+
+        # Use nickname, team and minutes mappings
+        player_nickname = nickname_mapping[player_name] or player_name
+        player_team = team_mapping[player_name]
+        opponent_team = teams[teams != player_team].item()
+        player_minutes = minutes_mapping[player_name]
+
+        # Get player metrics
+        goals = len(
+            match_events_df.loc[(match_events_df["event_type"] == "SHOT") & (match_events_df["result"] == "GOAL")]
+        )
+        crosses = len(match_events_df.loc[(match_events_df["pass_type"] == "CROSS") & (match_events_df["success"])])
+        dribbles = len(match_events_df.loc[(match_events_df["event_type"] == "TAKE_ON") & (match_events_df["success"])])
+        passes = len(match_events_df.loc[(match_events_df["event_type"] == "PASS") & (match_events_df["success"])])
+
+        player_metrics[player_nickname] = {
             "team": player_team,
             "opponent_team": opponent_team,
-            "position": player_position,
+            "position": get_player_position_group(dataset, player_name),
             "minutes_played": player_minutes,
-            "goals": player_goals,
-            "assists": player_assists,
-            "crosses": player_crosses,
-            "dribbles": player_dribbles,
-            "passes": player_passes,
+            "goals": goals,
+            "assists": assists_mapping.get(player_name, 0),
+            "crosses": crosses,
+            "dribbles": dribbles,
+            "passes": passes,
         }
 
     return player_metrics
