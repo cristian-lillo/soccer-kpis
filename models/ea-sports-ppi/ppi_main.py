@@ -221,19 +221,21 @@ def calculate_players_performance_index(player_metrics: dict[str, dict], team_me
         opp_metrics = team_metrics[opponent_team]
         team_goals, opponent_goals = team_metrics[player_team]["goals"], team_metrics[opponent_team]["goals"]
 
-        # Subindex 1: Modelling Match Outcome
         # Calculate minutes ratio once
         minutes_ratio = round(metrics["minutes_played"] / team_metrics[player_team]["total_minutes"], 2)
 
-        index_1 = MODEL_COEFFICIENTS["constant"]
-        index_1 += player_crosses * MODEL_COEFFICIENTS["crosses"]
-        index_1 += player_dribbles * MODEL_COEFFICIENTS["dribbles"]
-        index_1 += player_passes * MODEL_COEFFICIENTS["passes"]
-        index_1 += opp_interceptions * MODEL_COEFFICIENTS["opp_interceptions"]
-        index_1 += opp_yellows * MODEL_COEFFICIENTS["opp_yellows"]
-        index_1 += opp_reds * MODEL_COEFFICIENTS["opp_reds"]
-        index_1 += opp_tackle_win_ratio * MODEL_COEFFICIENTS["opp_tackle_win_ratio"]
-        index_1 += opp_clearances * MODEL_COEFFICIENTS["opp_clearances"]
+        # Subindex 1: Modelling Match Outcome
+        index_1 = (
+            MODEL_COEFFICIENTS["constant"]
+            + metrics["crosses"] * MODEL_COEFFICIENTS["crosses"]
+            + metrics["dribbles"] * MODEL_COEFFICIENTS["dribbles"]
+            + metrics["passes"] * MODEL_COEFFICIENTS["passes"]
+            + opp_metrics["interceptions"] * MODEL_COEFFICIENTS["opp_interceptions"]
+            + opp_metrics["yellow_cards"] * MODEL_COEFFICIENTS["opp_yellows"]
+            + opp_metrics["red_cards"] * MODEL_COEFFICIENTS["opp_reds"]
+            + opp_metrics["tackle_win_ratio"] * MODEL_COEFFICIENTS["opp_tackle_win_ratio"]
+            + opp_metrics["clearances"] * MODEL_COEFFICIENTS["opp_clearances"]
+        )
 
         # Subindex 2: Points-Sharing Index
         if team_goals > opponent_goals:
@@ -268,19 +270,23 @@ def calculate_players_performance_index(player_metrics: dict[str, dict], team_me
             )
         )
 
-        # Append player PPI data to list
         ppi_list.append(
             {
                 "player": player,
-                "team": player_team,
-                "position": player_position,
+                "team": metrics["team"],
+                "position": metrics["position"],
                 "index_score": player_index,
-                "minutes_played": player_minutes,
-                "goals": player_goals,
-                "assists": player_assists,
-                "crosses": player_crosses,
-                "dribbles": player_dribbles,
-                "passes": player_passes,
+                "minutes_played": metrics["minutes_played"],
+                "goals": metrics["goals"],
+                "assists": metrics["assists"],
+                "crosses": metrics["crosses"],
+                "dribbles": metrics["dribbles"],
+                "passes": metrics["passes"],
+                "opposition_interceptions": opp_metrics["interceptions"],
+                "opposition_yellow_cards": opp_metrics["yellow_cards"],
+                "opposition_red_cards": opp_metrics["red_cards"],
+                "opposition_tackle_win_ratio": opp_metrics["tackle_win_ratio"],
+                "opposition_clearances": opp_metrics["clearances"],
             }
         )
 
