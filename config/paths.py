@@ -41,6 +41,13 @@ OPTA_POINTS_OUTPUT_DIR = OUTPUT_DIR / "opta_points"
 PLAYERANK_OUTPUT_DIR = OUTPUT_DIR / "playerank"
 VAEP_OUTPUT_DIR = OUTPUT_DIR / "vaep"
 
+MODEL_OUTPUT_DIRECTORIES = [
+    EA_SPORTS_PPI_OUTPUT_DIR,
+    OPTA_POINTS_OUTPUT_DIR,
+    PLAYERANK_OUTPUT_DIR,
+    VAEP_OUTPUT_DIR,
+]
+
 # Define scripts directory (soccer-kpis/scripts)
 SCRIPTS_DIR = PROJECT_ROOT / "scripts"
 
