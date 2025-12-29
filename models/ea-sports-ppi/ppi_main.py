@@ -335,10 +335,13 @@ def get_tournament_ppi_scores(tournament: dict) -> pd.DataFrame:
     Returns:
         DataFrame containing PPI scores for each player in the tournament.
     """
+    # Get all match IDs for the tournament
     match_ids = tournaments.get_all_match_ids(tournament)
 
-    all_players_ppi_df = pd.DataFrame(
+    # Initialize empty DataFrame to store tournament PPI scores
+    all_matches_ppi_df = pd.DataFrame(
         columns=[
+            "rank",
             "player",
             "team",
             "position",
@@ -349,6 +352,11 @@ def get_tournament_ppi_scores(tournament: dict) -> pd.DataFrame:
             "crosses",
             "dribbles",
             "passes",
+            "opposition_interceptions",
+            "opposition_yellow_cards",
+            "opposition_red_cards",
+            "opposition_tackle_win_ratio",
+            "opposition_clearances",
         ]
     )
 
