@@ -22,9 +22,24 @@ warnings.filterwarnings(
     category=UserWarning,
 )
 
+# Coefficients and points used in PPI calculation
+MODEL_COEFFICIENTS = {
+    "crosses": 0.519,
+    "dribbles": 0.118,
+    "passes": 0.034,
+    "opp_interceptions": -0.024,
+    "opp_yellows": 0.253,
+    "opp_reds": 1.023,
+    "opp_tackle_win_ratio": -0.170,
+    "opp_clearances": -0.017,
+    "constant": 6.463,
+}
 
+POINTS = {"WIN": 3, "DRAW": 1, "LOSS": 0, "PER_GAME": 1.34, "PER_GOAL": 1.039, "PER_ASSIST": 1.039}
 
+CLEAN_SHEET_POINTS = {"Goalkeeper": 0.585, "Defender": 0.364, "Midfielder": 0.150, "Attacker": 0.071}
 
+INDEX_WEIGHTS = {"I1": 0.25, "I2": 0.375, "I3": 0.125, "I4": 0.125, "I5": 0.0625, "I6": 0.0625}
 
 
 def get_player_position_group(dataset: EventDataset, player_name: str) -> str:
@@ -207,17 +222,6 @@ def calculate_players_performance_index(player_metrics: dict[str, dict], team_me
         team_goals, opponent_goals = team_metrics[player_team]["goals"], team_metrics[opponent_team]["goals"]
 
         # Subindex 1: Modelling Match Outcome
-        MODEL_COEFFICIENTS = {
-            "crosses": 0.519,
-            "dribbles": 0.118,
-            "passes": 0.034,
-            "opp_interceptions": -0.024,
-            "opp_yellows": 0.253,
-            "opp_reds": 1.023,
-            "opp_tackle_win_ratio": -0.170,
-            "opp_clearances": -0.017,
-            "constant": 6.463,
-        }
         # Calculate minutes ratio once
         minutes_ratio = round(metrics["minutes_played"] / team_metrics[player_team]["total_minutes"], 2)
 
@@ -232,67 +236,35 @@ def calculate_players_performance_index(player_metrics: dict[str, dict], team_me
         index_1 += opp_clearances * MODEL_COEFFICIENTS["opp_clearances"]
 
         # Subindex 2: Points-Sharing Index
-        POINTS_FOR_WIN = 3
-        POINTS_FOR_DRAW = 1
-        POINTS_FOR_LOSS = 0
-
         if team_goals > opponent_goals:
-            index_2 = minutes_ratio * POINTS_FOR_WIN
+            index_2 = minutes_ratio * POINTS["WIN"]
         elif team_goals == opponent_goals:
-            index_2 = minutes_ratio * POINTS_FOR_DRAW
+            index_2 = minutes_ratio * POINTS["DRAW"]
         else:
-            index_2 = minutes_ratio * POINTS_FOR_LOSS
+            index_2 = minutes_ratio * POINTS["LOSS"]
 
         # Subindex 3: Appearance Index
-        POINTS_PER_GAME = 1.34
-        index_3 = minutes_ratio * POINTS_PER_GAME
+        index_3 = minutes_ratio * POINTS["PER_GAME"]
 
         # Subindex 4: Goal-Scoring Index
-        POINTS_PER_GOAL = 1.039
-        index_4 = player_goals * POINTS_PER_GOAL
+        index_4 = metrics["goals"] * POINTS["PER_GOAL"]
 
         # Subindex 5: Assists Index
-        POINTS_PER_ASSIST = 1.039
-        index_5 = player_assists * POINTS_PER_ASSIST
+        index_5 = metrics["assists"] * POINTS["PER_ASSIST"]
 
         # Subindex 6: Clean-Sheets Index
-        POINTS_PER_CLEAN_SHEET_GOALKEEPER = 0.585
-        POINTS_PER_CLEAN_SHEET_DEFENDER = 0.364
-        POINTS_PER_CLEAN_SHEET_MIDFIELDER = 0.150
-        POINTS_PER_CLEAN_SHEET_STRIKER = 0.071
-
-        if opponent_goals == 0:
-            match player_position:
-                case "Goalkeeper":
-                    index_6 = POINTS_PER_CLEAN_SHEET_GOALKEEPER
-                case "Defender":
-                    index_6 = POINTS_PER_CLEAN_SHEET_DEFENDER
-                case "Midfielder":
-                    index_6 = POINTS_PER_CLEAN_SHEET_MIDFIELDER
-                case "Attacker":
-                    index_6 = POINTS_PER_CLEAN_SHEET_STRIKER
-                case _:
-                    index_6 = 0
-        else:
-            index_6 = 0
+        index_6 = CLEAN_SHEET_POINTS.get(metrics["position"], 0) if opponent_goals == 0 else 0
 
         # Final PPI calculation
-        I1_WEIGHT = 0.25
-        I2_WEIGHT = 0.375
-        I3_WEIGHT = 0.125
-        I4_WEIGHT = 0.125
-        I5_WEIGHT = 0.0625
-        I6_WEIGHT = 0.0625
-
         player_index = round(
             100
             * (
-                I1_WEIGHT * index_1
-                + I2_WEIGHT * index_2
-                + I3_WEIGHT * index_3
-                + I4_WEIGHT * index_4
-                + I5_WEIGHT * index_5
-                + I6_WEIGHT * index_6
+                INDEX_WEIGHTS["I1"] * index_1
+                + INDEX_WEIGHTS["I2"] * index_2
+                + INDEX_WEIGHTS["I3"] * index_3
+                + INDEX_WEIGHTS["I4"] * index_4
+                + INDEX_WEIGHTS["I5"] * index_5
+                + INDEX_WEIGHTS["I6"] * index_6
             )
         )
 
