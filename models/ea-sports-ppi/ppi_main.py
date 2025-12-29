@@ -410,14 +410,23 @@ def get_tournament_ppi_scores(tournament: dict) -> pd.DataFrame:
 
     return tournament_ppi_df
 
-def main():
-    """Main function to demonstrate PPI calculation"""
-    # Example: Calculate PPI for UEFA Euro 2024 tournament
-    tournament = tournaments.EURO_2024
-    ppi_df = calculate_ppi_for_tournament(tournament)
 
-    print(f"\nTop 10 Players in {tournament['label']} by EA Sports PPI:")
-    print(ppi_df.head(10))
+def main():
+    # Calculate PPI for National Team Tournaments
+    for tournament in tqdm(
+        tournaments.NATIONAL_TEAM_TOURNAMENTS,
+        desc="Processing National Team Tournaments",
+        ncols=150,
+    ):
+        get_tournament_ppi_scores(tournament)
+
+    # Calculate PPI for European Club Leagues
+    for tournament in tqdm(
+        tournaments.EUROPEAN_CLUB_LEAGUES,
+        desc="Processing European Club Leagues",
+        ncols=150,
+    ):
+        get_tournament_ppi_scores(tournament)
 
 
 if __name__ == "__main__":
