@@ -32,3 +32,6 @@ venv/
 
 # Model data folders
 /models/*/data/
+
+# Output folders
+/output/**/*.csv
