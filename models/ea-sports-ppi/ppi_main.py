@@ -6,6 +6,7 @@ import warnings
 
 import pandas as pd
 from kloppy.domain import EventDataset
+from tqdm import tqdm
 
 from config import paths, players, tournaments
 
@@ -360,15 +361,23 @@ def get_tournament_ppi_scores(tournament: dict) -> pd.DataFrame:
         ]
     )
 
-    for i, match_id in enumerate(match_ids):
-        print(f"Calculating PPI for match {match_id}... ({i + 1}/{len(match_ids)})")
+    # Calculate PPI for each match and concatenate results
+    for match_id in tqdm(match_ids, desc=f"Calculating PPI for matches in {tournament['label']}", ncols=150):
+        match_ppi_df = get_match_ppi_scores(match_id)
 
-        ppi_df = calculate_ppi_for_match(match_id)
-        all_players_ppi_df = pd.concat([all_players_ppi_df, ppi_df], ignore_index=True)
+        # Save match PPI scores to CSV
+        match_filename = paths.EA_SPORTS_PPI_OUTPUT_DIR / tournament["label"] / f"match_{match_id}_ppi_scores.csv"
+        match_ppi_df.to_csv(match_filename, index=False)
 
     # Merge PPI scores for players appearing in multiple matches by averaging their scores
     all_players_ppi_df = (
         all_players_ppi_df.groupby(
+        # Combine match PPI scores into all matches DataFrame
+        if all_matches_ppi_df.empty:
+            all_matches_ppi_df = match_ppi_df
+        else:
+            all_matches_ppi_df = pd.concat([all_matches_ppi_df, match_ppi_df], ignore_index=True)
+
             ["player", "team"],
             as_index=False,
         )
