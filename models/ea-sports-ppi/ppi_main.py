@@ -58,25 +58,31 @@ def get_player_position_group(dataset: EventDataset, player_name: str) -> str:
     return player_position[0]
 
 
+def calculate_tackle_win_ratio(team_events_df: pd.DataFrame) -> float:
+    """
+    Calculate the tackle win ratio for a team.
 
+    Args:
+        team_events_df: DataFrame containing events for the team.
 
-
-
-
-
-
-
-
-
-def calculate_tackle_win_ratio(team_df: pd.DataFrame) -> float:
-    """Calculate tackle win ratio for a team"""
-    total_duels = len(team_df[team_df["event_type"] == "DUEL"])
-    successful_duels = len(team_df[team_df["event_type"] == "DUEL"][team_df["success"]])
+    Returns:
+        The tackle win ratio as a float rounded to two decimal places.
+    """
+    total_duels = len(team_events_df.loc[team_events_df["event_type"] == "DUEL"])
+    successful_duels = len(team_events_df.loc[(team_events_df["event_type"] == "DUEL") & (team_events_df["success"])])
 
     if total_duels == 0:
         return 0.0
     else:
         return round(successful_duels / total_duels, 2)
+
+
+
+
+
+
+
+
 
 
 def extract_player_metrics(dataset: EventDataset, minutes_dataset: list, df: pd.DataFrame) -> dict:
