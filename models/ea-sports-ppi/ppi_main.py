@@ -298,12 +298,20 @@ def calculate_players_performance_index(player_metrics: dict[str, dict], team_me
     return ranked_ppi_df
 
 
+def get_match_ppi_scores(match_id: int) -> pd.DataFrame:
+    """
+    Obtain PPI scores for all players in a given match.
+
+    Args:
+        match_id: StatsBomb match ID.
+
+    Returns:
+        DataFrame containing PPI scores for each player in the match.
+    """
     # Load players info and team minutes
     players_info_df = players.get_players_info(match_id)
     team_minutes_dict = players.get_minutes_played_by_team(match_id)
 
-def calculate_ppi_for_match(match_id: int) -> pd.DataFrame:
-    """Calculate PPI for all players in a match"""
     # Load match data
     dataset, match_events_df = players.load_match_data(match_id)
 
