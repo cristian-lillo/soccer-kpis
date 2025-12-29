@@ -146,3 +146,7 @@ def get_all_match_ids(tournament: dict) -> list[int]:
 
 # Ensure all required directories exist
 setup_tournament_directories()
+
+# StatsBomb match ID for UEFA Euro 2024 Final
+match_ids = get_all_match_ids(EURO_2024)
+EURO_2024_FINAL_MATCH_ID = match_ids[0]
