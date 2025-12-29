@@ -113,6 +113,16 @@ NATIONAL_TEAM_TOURNAMENTS = [
     COPA_AMERICA_2024,
 ]
 
+ALL_TOURNAMENTS = EUROPEAN_CLUB_LEAGUES + NATIONAL_TEAM_TOURNAMENTS
+
+
+def setup_tournament_directories():
+    """Create necessary directories for each tournament in model output directories."""
+    for model_output_dir in paths.MODEL_OUTPUT_DIRECTORIES:
+        for tournament in ALL_TOURNAMENTS:
+            tournament_dir = model_output_dir / tournament["label"]
+            tournament_dir.mkdir(parents=True, exist_ok=True)
+
 
 def get_all_match_ids(tournament: dict) -> list[int]:
     """Retrieve all StatsBomb match IDs for a given tournament."""
@@ -130,3 +140,7 @@ def get_all_match_ids(tournament: dict) -> list[int]:
     match_ids = games_df["game_id"].tolist()
 
     return match_ids
+
+
+# Ensure all required directories exist
+setup_tournament_directories()
