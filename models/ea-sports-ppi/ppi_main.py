@@ -138,9 +138,20 @@ def extract_player_metrics(
     return player_metrics
 
 
-def extract_team_metrics(minutes_played_dataset: list, df: pd.DataFrame) -> dict:
-    """Extract team metrics: minutes played, goals, yellow and red cards, interceptions, clearances and tackle wins"""
-    # Initialize dictionary to hold team metrics
+def extract_team_metrics(
+    match_events_df: pd.DataFrame,
+    team_minutes_dict: dict[str, int],
+) -> dict[str, dict[str, str | int | float]]:
+    """
+    Extract team metrics: total minutes, goals, yellow cards, red cards, interceptions, clearances, tackle win ratio.
+
+    Args:
+        match_events_df: DataFrame containing all events in the match.
+        team_minutes_dict: Dictionary mapping team names to total minutes played.
+
+    Returns:
+        A dictionary mapping team names to their metrics.
+    """
     team_metrics = {}
 
     for team in df["team"].unique():
