@@ -325,8 +325,16 @@ def get_match_ppi_scores(match_id: int) -> pd.DataFrame:
     return ppi_df
 
 
-def calculate_ppi_for_tournament(tournament: dict) -> pd.DataFrame:
-    """Calculate PPI for all players in a tournament given a list of match IDs"""
+def get_tournament_ppi_scores(tournament: dict) -> pd.DataFrame:
+    """
+    Obtain PPI scores for all players in a given tournament.
+
+    Args:
+        tournament: A dictionary containing competition and season IDs.
+
+    Returns:
+        DataFrame containing PPI scores for each player in the tournament.
+    """
     match_ids = tournaments.get_all_match_ids(tournament)
 
     all_players_ppi_df = pd.DataFrame(
