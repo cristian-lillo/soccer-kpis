@@ -187,9 +187,18 @@ def extract_team_metrics(
     return team_metrics
 
 
-def calculate_ppi_for_players(player_metrics: dict, team_metrics: dict) -> pd.DataFrame:
-    """Calculate EA Sports PPI for each player"""
     # Initialize list to hold player PPI scores
+def calculate_players_performance_index(player_metrics: dict[str, dict], team_metrics: dict[str, dict]) -> pd.DataFrame:
+    """
+    Calculate the Player Performance Index (PPI) for each player based on their metrics and team metrics.
+
+    Args:
+        player_metrics: A dictionary mapping player nicknames to their metrics.
+        team_metrics: A dictionary mapping team names to their metrics.
+
+    Returns:
+        DataFrame containing PPI scores for each player.
+    """
     ppi_list = []
 
     for player, metrics in player_metrics.items():
