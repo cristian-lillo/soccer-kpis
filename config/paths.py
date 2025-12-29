@@ -23,7 +23,7 @@ STATSBOMB_COMPETITIONS_FILE = STATSBOMB_DIR / "competitions.json"
 # Define models directory (soccer-kpis/models)
 MODELS_DIR = PROJECT_ROOT / "models"
 
-# Models
+# Model-specific directories
 EA_SPORTS_PPI_DIR = MODELS_DIR / "ea_sports_ppi"
 OPTA_POINTS_DIR = MODELS_DIR / "opta_points"
 PLAYERANK_DIR = MODELS_DIR / "playerank"
@@ -35,7 +35,7 @@ NOTEBOOKS_DIR = PROJECT_ROOT / "notebooks"
 # Define output directory (soccer-kpis/output)
 OUTPUT_DIR = PROJECT_ROOT / "output"
 
-# Models output
+# Model output directories
 EA_SPORTS_PPI_OUTPUT_DIR = OUTPUT_DIR / "ea_sports_ppi"
 OPTA_POINTS_OUTPUT_DIR = OUTPUT_DIR / "opta_points"
 PLAYERANK_OUTPUT_DIR = OUTPUT_DIR / "playerank"
@@ -52,9 +52,9 @@ MODEL_OUTPUT_DIRECTORIES = [
 SCRIPTS_DIR = PROJECT_ROOT / "scripts"
 
 
-def create_required_directories():
-    """Create all required directories if they do not exist."""
-    dirs = [
+def setup_project_directories():
+    """Create all necessary project directories if they do not exist."""
+    required_directories = [
         DATA_DIR,
         STATSBOMB_DIR,
         STATSBOMB_MATCHES_DIR,
@@ -75,9 +75,9 @@ def create_required_directories():
         SCRIPTS_DIR,
     ]
 
-    for directory in dirs:
-        directory.mkdir(parents=True, exist_ok=True)
+    for directory_path in required_directories:
+        directory_path.mkdir(parents=True, exist_ok=True)
 
 
-# Create directories automatically when module is imported
-create_required_directories()
+# Ensure all required directories exist
+setup_project_directories()
