@@ -154,29 +154,34 @@ def extract_team_metrics(
     """
     team_metrics = {}
 
-    for team in df["team"].unique():
-        team_df = df[df["team"] == team]
+    for team in match_events_df["team"].unique():
+        team_events_df = match_events_df[match_events_df["team"] == team]
 
-        # Obtain team metrics
-        team_minutes = get_team_minutes(minutes_played_dataset, team)
-        team_goals = len(team_df[team_df["event_type"] == "SHOT"][team_df["result"] == "GOAL"])
-        team_yellow_cards = len(team_df[team_df["event_type"] == "CARD"][team_df["card_type"] == "FIRST_YELLOW"])
-        team_red_cards = len(
-            team_df[team_df["event_type"] == "CARD"][team_df["card_type"].isin(["RED", "SECOND_YELLOW"])]
+        # Get team metrics
+        goals = len(team_events_df.loc[(team_events_df["event_type"] == "SHOT") & (team_events_df["result"] == "GOAL")])
+        yellow_cards = len(
+            team_events_df.loc[
+                (team_events_df["event_type"] == "CARD") & (team_events_df["card_type"] == "FIRST_YELLOW")
+            ]
         )
-        team_interceptions = len(team_df[team_df["event_type"] == "INTERCEPTION"][team_df["success"]])
-        team_clearances = len(team_df[team_df["event_type"] == "CLEARANCE"])
-        team_tackle_win_ratio = calculate_tackle_win_ratio(team_df)
+        red_cards = len(
+            team_events_df.loc[
+                (team_events_df["event_type"] == "CARD") & (team_events_df["card_type"].isin(["RED", "SECOND_YELLOW"]))
+            ]
+        )
+        interceptions = len(
+            team_events_df.loc[(team_events_df["event_type"] == "INTERCEPTION") & (team_events_df["success"])]
+        )
+        clearances = len(team_events_df.loc[team_events_df["event_type"] == "CLEARANCE"])
 
-        # Store metrics in dictionary
         team_metrics[team] = {
-            "total_minutes": team_minutes,
-            "goals": team_goals,
-            "yellow_cards": team_yellow_cards,
-            "red_cards": team_red_cards,
-            "interceptions": team_interceptions,
-            "clearances": team_clearances,
-            "tackle_win_ratio": team_tackle_win_ratio,
+            "total_minutes": team_minutes_dict[team],
+            "goals": goals,
+            "yellow_cards": yellow_cards,
+            "red_cards": red_cards,
+            "interceptions": interceptions,
+            "clearances": clearances,
+            "tackle_win_ratio": calculate_tackle_win_ratio(team_events_df),
         }
 
     return team_metrics
