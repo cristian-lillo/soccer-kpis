@@ -77,16 +77,28 @@ def calculate_tackle_win_ratio(team_events_df: pd.DataFrame) -> float:
         return round(successful_duels / total_duels, 2)
 
 
+def extract_player_metrics(
+    dataset: EventDataset,
+    match_events_df: pd.DataFrame,
+    player_info_df: pd.DataFrame,
+) -> dict[str, dict[str, str | int]]:
+    """
+    Extract player metrics: minutes played, goals, assists, crosses, dribbles and passes.
+
+    Args:
+        dataset: The event dataset containing player data.
+        match_events_df: DataFrame containing all events in the match.
+        player_info_df: DataFrame containing player information.
+
+    Returns:
+        A dictionary mapping player nicknames to their metrics.
+    """
 
 
 
 
 
 
-
-
-def extract_player_metrics(dataset: EventDataset, minutes_dataset: list, df: pd.DataFrame) -> dict:
-    """Extract player metrics: team, position, minutes played, goals, assists, crosses, dribbles and passes"""
     # Initialize dictionary to hold player metrics
     player_metrics = {}
 
