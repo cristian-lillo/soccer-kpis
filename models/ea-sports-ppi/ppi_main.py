@@ -27,10 +27,17 @@ warnings.filterwarnings(
 
 
 
+def get_player_position_group(dataset: EventDataset, player_name: str) -> str:
+    """
+    Determine the main position group of a player based on time spent in each position.
 
-def get_player_position(dataset: EventDataset, player_name: str) -> str:
-    """Determine main position for a player based on time spent in each position"""
-    # Set default position and duration
+    Args:
+        dataset: The event dataset containing player position data.
+        player_name: The name of the player.
+
+    Returns:
+        The main position group of the player as a string.
+    """
     player_position = ("", 0)
 
     # Iterate through dataset to find player's position history
@@ -39,16 +46,13 @@ def get_player_position(dataset: EventDataset, player_name: str) -> str:
             # Only get position for the specified player
             if player.name == player_name:
                 for start_time, end_time, position in player.positions.ranges():
-                    duration = (end_time - start_time).total_seconds()
-
-                    # Navigate to obtain the position group
-                    while position.parent is not None:
-                        position = position.parent
+                    position_duration = (end_time - start_time).total_seconds()
+                    position_group = position.position_group.name
 
                     # Compare and update the variable if this position has longer duration
                     prev_position, prev_duration = player_position
-                    if position.name != prev_position and duration > prev_duration:
-                        player_position = (position.name, duration)
+                    if position_group != prev_position and position_duration > prev_duration:
+                        player_position = (position_group, position_duration)
 
     # Return only the position name
     return player_position[0]
