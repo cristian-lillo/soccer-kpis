@@ -290,9 +290,13 @@ def calculate_players_performance_index(player_metrics: dict[str, dict], team_me
             }
         )
 
-    # Convert list to DataFrame
+    # Create DataFrame and rank players by index score
     ppi_df = pd.DataFrame(ppi_list)
-    return ppi_df
+    ranked_ppi_df = ppi_df.sort_values("index_score", ascending=False).reset_index(drop=True)
+    ranked_ppi_df.insert(0, "rank", range(1, len(ranked_ppi_df) + 1))
+
+    return ranked_ppi_df
+
 
     # Load players info and team minutes
     players_info_df = players.get_players_info(match_id)
