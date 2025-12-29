@@ -125,16 +125,18 @@ def setup_tournament_directories():
 
 
 def get_all_match_ids(tournament: dict) -> list[int]:
-    """Retrieve all StatsBomb match IDs for a given tournament."""
-    SBL = StatsBombLoader(
-        getter="local",
-        root=str(paths.STATSBOMB_DIR),
-    )
+    """
+    Retrieve all StatsBomb match IDs for a given tournament.
 
-    games_df = SBL.games(
-        competition_id=tournament["competition_id"],
-        season_id=tournament["season_id"],
-    )
+    Args:
+        tournament (dict): A dictionary containing competition and season IDs.
+
+    Returns:
+        list[int]: A list of match IDs.
+    """
+    SBL = StatsBombLoader(getter="local", root=str(paths.STATSBOMB_DIR))
+
+    games_df = SBL.games(competition_id=tournament["competition_id"], season_id=tournament["season_id"])
     games_df.sort_values(by=["game_day", "game_date"], ascending=False, inplace=True)
 
     match_ids = games_df["game_id"].tolist()
