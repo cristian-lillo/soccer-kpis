@@ -24,8 +24,8 @@ STATSBOMB_COMPETITIONS_FILE = STATSBOMB_DIR / "competitions.json"
 MODELS_DIR = PROJECT_ROOT / "models"
 
 # Models
-EA_SPORTS_PPI_DIR = MODELS_DIR / "ea-sports-ppi"
-OPTA_DIR = MODELS_DIR / "opta-points"
+EA_SPORTS_PPI_DIR = MODELS_DIR / "ea_sports_ppi"
+OPTA_POINTS_DIR = MODELS_DIR / "opta_points"
 PLAYERANK_DIR = MODELS_DIR / "playerank"
 VAEP_DIR = MODELS_DIR / "vaep"
 
@@ -36,8 +36,8 @@ NOTEBOOKS_DIR = PROJECT_ROOT / "notebooks"
 OUTPUT_DIR = PROJECT_ROOT / "output"
 
 # Models output
-EA_SPORTS_PPI_OUTPUT_DIR = OUTPUT_DIR / "ea-sports-ppi"
-OPTA_OUTPUT_DIR = OUTPUT_DIR / "opta-points"
+EA_SPORTS_PPI_OUTPUT_DIR = OUTPUT_DIR / "ea_sports_ppi"
+OPTA_POINTS_OUTPUT_DIR = OUTPUT_DIR / "opta_points"
 PLAYERANK_OUTPUT_DIR = OUTPUT_DIR / "playerank"
 VAEP_OUTPUT_DIR = OUTPUT_DIR / "vaep"
 
@@ -56,13 +56,13 @@ def create_required_directories():
         STATSBOMB_THREE_SIXTY_DIR,
         MODELS_DIR,
         EA_SPORTS_PPI_DIR,
-        OPTA_DIR,
+        OPTA_POINTS_DIR,
         PLAYERANK_DIR,
         VAEP_DIR,
         NOTEBOOKS_DIR,
         OUTPUT_DIR,
         EA_SPORTS_PPI_OUTPUT_DIR,
-        OPTA_OUTPUT_DIR,
+        OPTA_POINTS_OUTPUT_DIR,
         PLAYERANK_OUTPUT_DIR,
         VAEP_OUTPUT_DIR,
         SCRIPTS_DIR,
