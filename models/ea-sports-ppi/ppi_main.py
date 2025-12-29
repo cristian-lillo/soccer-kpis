@@ -369,21 +369,22 @@ def get_tournament_ppi_scores(tournament: dict) -> pd.DataFrame:
         match_filename = paths.EA_SPORTS_PPI_OUTPUT_DIR / tournament["label"] / f"match_{match_id}_ppi_scores.csv"
         match_ppi_df.to_csv(match_filename, index=False)
 
-    # Merge PPI scores for players appearing in multiple matches by averaging their scores
-    all_players_ppi_df = (
-        all_players_ppi_df.groupby(
         # Combine match PPI scores into all matches DataFrame
         if all_matches_ppi_df.empty:
             all_matches_ppi_df = match_ppi_df
         else:
             all_matches_ppi_df = pd.concat([all_matches_ppi_df, match_ppi_df], ignore_index=True)
 
+    # Aggregate PPI scores for players across all matches in the tournament
+    tournament_ppi_df = (
+        all_matches_ppi_df.groupby(
             ["player", "team"],
             as_index=False,
         )
         .agg(
             {
-                "index_score": "avg",
+                "position": lambda x: x.mode().loc[0],
+                "index_score": "sum",
                 "minutes_played": "sum",
                 "goals": "sum",
                 "assists": "sum",
@@ -395,14 +396,19 @@ def get_tournament_ppi_scores(tournament: dict) -> pd.DataFrame:
         .sort_values("index_score", ascending=False)
         .reset_index(drop=True)
     )
-    all_players_ppi_df.insert(0, "rank", range(1, len(all_players_ppi_df) + 1))
 
-    # Save index scores to CSV
-    output_filename = paths.EA_SPORTS_PPI_OUTPUT_DIR / f"{tournament['label']}_ppi_scores.csv"
-    all_players_ppi_df.to_csv(output_filename, index=False)
+    # Add rank column
+    tournament_ppi_df.insert(0, "rank", range(1, len(tournament_ppi_df) + 1))
 
-    return all_players_ppi_df
+    # Add matches played column
+    player_team_counts = all_matches_ppi_df.value_counts(["player", "team"]).reset_index(name="matches_played")
+    tournament_ppi_df = pd.merge(tournament_ppi_df, player_team_counts, how="left", on=["player", "team"])
 
+    # Save tournament PPI scores to CSV
+    tournament_filename = paths.EA_SPORTS_PPI_OUTPUT_DIR / f"{tournament['label']}_ppi_scores.csv"
+    tournament_ppi_df.to_csv(tournament_filename, index=False)
+
+    return tournament_ppi_df
 
 def main():
     """Main function to demonstrate PPI calculation"""
