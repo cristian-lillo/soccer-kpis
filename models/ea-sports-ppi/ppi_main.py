@@ -5,10 +5,9 @@ Module to calculate the EA Sports Player Performance Index (PPI) for any match a
 import warnings
 
 import pandas as pd
-from kloppy import statsbomb
 from kloppy.domain import EventDataset
 
-from config import paths, tournaments
+from config import paths, players, tournaments
 
 # Ignore specific warnings for cleaner output
 warnings.filterwarnings(
@@ -24,84 +23,9 @@ warnings.filterwarnings(
 )
 
 
-def load_match_data(match_id: int) -> tuple[EventDataset, pd.DataFrame, list]:
-    """Load match data from the specified provider."""
-    # Load StatsBomb data
-    dataset = statsbomb.load(
-        event_data=paths.STATSBOMB_EVENTS_DIR / f"{match_id}.json",
-        lineup_data=paths.STATSBOMB_LINEUPS_DIR / f"{match_id}.json",
-    )
-
-    # Filter columns from the dataset
-    filtered_df = dataset.to_df(
-        "player_id",
-        "player",  # type: ignore
-        "team_id",
-        "team",
-        "event_id",
-        "event_type",
-        "result",
-        "success",
-        "body_part_type",
-        "pass_type",
-        "duel_type",
-        "set_piece_type",
-        "goalkeeper_type",
-        "card_type",
-        "coordinates_x",
-        "coordinates_y",
-        "time",
-    )
-
-    # Create a mapping for dtypes of all columns
-    dtype_mapping = {
-        "player_id": "Int64",
-        "player": "string",
-        "team_id": "Int64",
-        "team": "string",
-        "event_id": "string",
-        "event_type": "category",
-        "result": "category",
-        "success": "boolean",
-        "body_part_type": "category",
-        "pass_type": "category",
-        "duel_type": "category",
-        "set_piece_type": "category",
-        "goalkeeper_type": "category",
-        "card_type": "category",
-        "coordinates_x": "Float64",
-        "coordinates_y": "Float64",
-        "time": "string",
-    }
-
-    # Convert the type of all DataFrame columns
-    filtered_df = filtered_df.astype(dtype_mapping)
-
-    # Filter DataFrame to only keep rows related to player events
-    players_df = filtered_df[filtered_df["player_id"].notna()]
-
-    # Aggregate dataset to obtain minutes played for every player
-    minutes_dataset = dataset.aggregate("minutes_played")
-
-    return dataset, players_df, minutes_dataset
 
 
-def get_player_and_opponent_teams(dataset: EventDataset, player_df: pd.DataFrame) -> tuple[str, str]:
-    """Get player's team and opponent team from player's DataFrame"""
-    # Obtain both team names from the dataset
-    home_team, away_team = dataset.metadata.teams
-    home_team_name, away_team_name = home_team.name, away_team.name
 
-    # Get player's team
-    player_team = player_df["team"].iloc[0]
-
-    # Get opponent team
-    if player_team == home_team_name:
-        opponent_team = away_team_name
-    else:
-        opponent_team = home_team_name
-
-    return player_team, opponent_team
 
 
 def get_player_position(dataset: EventDataset, player_name: str) -> str:
@@ -130,66 +54,14 @@ def get_player_position(dataset: EventDataset, player_name: str) -> str:
     return player_position[0]
 
 
-def get_player_minutes(minutes_dataset: list, player_name: str) -> int:
-    """Get minutes played by a player"""
-    # Initialize minutes played
-    minutes_played = 0
-
-    # Iterate through minutes dataset to find the player
-    for entry in minutes_dataset:
-        if entry.player.name == player_name:
-            minutes_played = round(entry.duration.total_seconds() / 60)
-            break
-
-    return minutes_played
 
 
-def get_team_minutes(minutes_dataset: list, team_name: str) -> int:
-    """Get total minutes played by a team"""
-    # Initialize total minutes
-    total_minutes = 0
-
-    # Iterate through minutes dataset to find players in the specified team
-    for entry in minutes_dataset:
-        if entry.player.team.name == team_name:
-            total_minutes += round(entry.duration.total_seconds() / 60)
-
-    return total_minutes
 
 
-def calculate_assists_for_player(player_data: pd.DataFrame, df: pd.DataFrame) -> int:
-    """Calculate assists by looking for SHOT_ASSIST events before goals"""
-    # Get all goal events in the match
-    goals_df = df[df["event_type"] == "SHOT"][df["result"] == "GOAL"]
 
-    # Get player shot assist events
-    shot_assists_df = player_data[player_data["pass_type"] == "SHOT_ASSIST"]
 
-    # Get indexes of DataFrames
-    event_indexes = df.index.to_list()
-    goal_indexes = goals_df.index.to_list()
-    shot_assist_indexes = shot_assists_df.index.to_list()
 
-    # Initialize assist counter
-    assists_count = 0
 
-    # Iterate through each shot assist and look for a goal in subsequent events
-    for shot_assist_idx in shot_assist_indexes:
-        event_idx = shot_assist_idx
-
-        while event_idx in event_indexes:
-            event_idx += 1
-            if event_idx >= len(df):
-                break
-            event = df.iloc[event_idx]
-
-            if event_idx in goal_indexes:  # Found a goal for this shot assist
-                assists_count += 1
-                break
-            elif event["event_type"] == "SHOT":  # Found an unsuccessful shot
-                break
-
-    return assists_count
 
 
 def calculate_tackle_win_ratio(team_df: pd.DataFrame) -> float:
@@ -409,18 +281,21 @@ def calculate_ppi_for_players(player_metrics: dict, team_metrics: dict) -> pd.Da
     ppi_df = pd.DataFrame(ppi_list)
     return ppi_df
 
+    # Load players info and team minutes
+    players_info_df = players.get_players_info(match_id)
+    team_minutes_dict = players.get_minutes_played_by_team(match_id)
 
 def calculate_ppi_for_match(match_id: int) -> pd.DataFrame:
     """Calculate PPI for all players in a match"""
     # Load match data
-    dataset, players_df, minutes_dataset = load_match_data(match_id)
+    dataset, match_events_df = players.load_match_data(match_id)
 
     # Extract metrics
-    player_metrics = extract_player_metrics(dataset, minutes_dataset, players_df)
-    team_metrics = extract_team_metrics(minutes_dataset, players_df)
 
     # Calculate index scores
     ppi_df = calculate_ppi_for_players(player_metrics, team_metrics)
+    player_metrics = extract_player_metrics(dataset, match_events_df, players_info_df)
+    team_metrics = extract_team_metrics(match_events_df, team_minutes_dict)
 
     # Convert to DataFrame and rank players
     ppi_df = ppi_df.sort_values("index_score", ascending=False).reset_index(drop=True)
