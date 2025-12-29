@@ -187,7 +187,6 @@ def extract_team_metrics(
     return team_metrics
 
 
-    # Initialize list to hold player PPI scores
 def calculate_players_performance_index(player_metrics: dict[str, dict], team_metrics: dict[str, dict]) -> pd.DataFrame:
     """
     Calculate the Player Performance Index (PPI) for each player based on their metrics and team metrics.
@@ -202,29 +201,10 @@ def calculate_players_performance_index(player_metrics: dict[str, dict], team_me
     ppi_list = []
 
     for player, metrics in player_metrics.items():
-        # Get metrics needed for calculations
-        player_team = metrics["team"]
-        player_position = metrics["position"]
-        player_goals = metrics["goals"]
-        player_assists = metrics["assists"]
-        player_crosses = metrics["crosses"]
-        player_dribbles = metrics["dribbles"]
-        player_passes = metrics["passes"]
-
-        opponent_team = metrics["opponent_team"]
-        opponent_metrics = team_metrics[opponent_team]
-        opp_yellows = opponent_metrics["yellow_cards"]
-        opp_reds = opponent_metrics["red_cards"]
-        opp_interceptions = opponent_metrics["interceptions"]
-        opp_clearances = opponent_metrics["clearances"]
-        opp_tackle_win_ratio = opponent_metrics["tackle_win_ratio"]
-
-        team_goals = team_metrics[player_team]["goals"]
-        opponent_goals = team_metrics[opponent_team]["goals"]
-
-        player_minutes = metrics["minutes_played"]
-        team_minutes = team_metrics[player_team]["total_minutes"]
-        minutes_ratio = round(player_minutes / team_minutes, 2) if team_minutes > 0 else 0
+        # Extract metrics
+        player_team, opponent_team = metrics["team"], metrics["opponent_team"]
+        opp_metrics = team_metrics[opponent_team]
+        team_goals, opponent_goals = team_metrics[player_team]["goals"], team_metrics[opponent_team]["goals"]
 
         # Subindex 1: Modelling Match Outcome
         MODEL_COEFFICIENTS = {
@@ -238,6 +218,8 @@ def calculate_players_performance_index(player_metrics: dict[str, dict], team_me
             "opp_clearances": -0.017,
             "constant": 6.463,
         }
+        # Calculate minutes ratio once
+        minutes_ratio = round(metrics["minutes_played"] / team_metrics[player_team]["total_minutes"], 2)
 
         index_1 = MODEL_COEFFICIENTS["constant"]
         index_1 += player_crosses * MODEL_COEFFICIENTS["crosses"]
