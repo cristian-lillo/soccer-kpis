@@ -3,7 +3,7 @@ import json
 from collections import defaultdict
 
 from .abstract import Feature
-from .wyscoutEventsDefinition import *
+from .wyscoutEventsDefinition import tag2name
 
 
 class qualityFeatures(Feature):
@@ -79,7 +79,7 @@ class qualityFeatures(Feature):
 
                 evtName = evt["eventName"]
 
-                if type(event2subevent2outcome[evt["eventId"]]) == dict:
+                if type(event2subevent2outcome[evt["eventId"]]) is dict:
                     # hierarchy as event->subevent->tags
                     if evt["subEventId"] not in event2subevent2outcome[evt["eventId"]]:
                         # malformed events
