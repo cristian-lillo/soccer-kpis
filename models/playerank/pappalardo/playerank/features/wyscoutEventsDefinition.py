@@ -20,15 +20,30 @@ PASS = 8
 SAVE = 9
 SHOT = 10
 
-macroevent2name = {DUEL: 'duel', FOUL: 'foul', FREE_KICK: 'free kick', 
-             GOALKEEPER_LEAVING_LINE: 'goalkeeper leaving line', 
-             INTERRUPTION: 'interruption', 
-             OFFSIDE: 'offside', OTHERS: 'others on the ball', 
-             PASS: 'pass', SAVE: 'save attempt', SHOT: 'shot'}
+macroevent2name = {
+    DUEL: "duel",
+    FOUL: "foul",
+    FREE_KICK: "free kick",
+    GOALKEEPER_LEAVING_LINE: "goalkeeper leaving line",
+    INTERRUPTION: "interruption",
+    OFFSIDE: "offside",
+    OTHERS: "others on the ball",
+    PASS: "pass",
+    SAVE: "save attempt",
+    SHOT: "shot",
+}
 
-macroevent2positions_index = {DUEL: 0, FOUL: 0, FREE_KICK: 0,
-                              GOALKEEPER_LEAVING_LINE: 0, INTERRUPTION: 0,
-                              OFFSIDE: 0, OTHERS: 0, PASS: 0, SAVE: 1, SHOT: 0
+macroevent2positions_index = {
+    DUEL: 0,
+    FOUL: 0,
+    FREE_KICK: 0,
+    GOALKEEPER_LEAVING_LINE: 0,
+    INTERRUPTION: 0,
+    OFFSIDE: 0,
+    OTHERS: 0,
+    PASS: 0,
+    SAVE: 1,
+    SHOT: 0,
 }
 
 ## CONSTANTS IDENTIFYING SUB EVENTS
@@ -48,7 +63,7 @@ SIMULATION_FOUL = 25
 TIME_LOST_FOUL = 26
 VIOLENT_FOUL = 27
 
-#free kicks
+# free kicks
 CORNER_FREE_KICK = 30
 NORMAL_FREE_KICK = 31
 CROSS_FREE_KICK = 32
@@ -56,17 +71,22 @@ SHOT_FREE_KICK = 33
 GOAL_FREE_KICK = 34
 PENALTY_FREE_KICK = 35
 THROW_IN_FREE_KICK = 36
-# goalkeeping leaving line
+
+# goalkeeper leaving line
 GOALKEEPING_LEAVING_LINE = 40
+
 # interruption
 BALL_OUT_INTERRUPTION = 50
 WHISTLE_INTERRUPTION = 51
+
 # offside
-NORMAL_OFFSIDE=60
+NORMAL_OFFSIDE = 60
+
 # others on the ball
 ACCELERATION_OTHERS = 70
 CLEARANCE_OTHERS = 71
 TOUCH_OTHERS = 72
+
 # pass
 CROSS_PASS = 80
 HAND_PASS = 81
@@ -75,53 +95,80 @@ HIGH_PASS = 83
 LAUNCH_PASS = 84
 SIMPLE_PASS = 85
 SMART_PASS = 86
-# save
+
+# save attempt
 REFLEXES_SAVE = 90
 NORMAL_SAVE = 91
+
 # shot
 NORMAL_SHOT = 100
 
-macroevent2subevents = {DUEL: [AIR_DUEL, GROUND_ATTACKING_DUEL, GROUND_DEFENDING_DUEL, GROUND_LOOSE_BALL_DUEL],
-                       FOUL: [NORMAL_FOUL, HAND_FOUL, LATE_CARD_FOUL, OUT_OF_GAME_FOUL, PROTEST_FOUL, SIMULATION_FOUL,
-                              TIME_LOST_FOUL, VIOLENT_FOUL],
-                       FREE_KICK: [CORNER_FREE_KICK, NORMAL_FREE_KICK, CROSS_FREE_KICK, SHOT_FREE_KICK, GOAL_FREE_KICK, 
-                                   PENALTY_FREE_KICK, THROW_IN_FREE_KICK],
-                       INTERRUPTION: [BALL_OUT_INTERRUPTION, WHISTLE_INTERRUPTION], 
-                       OFFSIDE: [NORMAL_OFFSIDE],
-                       OTHERS: [ACCELERATION_OTHERS, CLEARANCE_OTHERS, TOUCH_OTHERS],
-                        PASS: [CROSS_PASS, HAND_PASS, HEAD_PASS, HIGH_PASS, LAUNCH_PASS, SIMPLE_PASS, SMART_PASS],
-                        SAVE: [REFLEXES_SAVE, NORMAL_SAVE],
-                        SHOT: [NORMAL_SHOT]
-                       }
+macroevent2subevents = {
+    DUEL: [AIR_DUEL, GROUND_ATTACKING_DUEL, GROUND_DEFENDING_DUEL, GROUND_LOOSE_BALL_DUEL],
+    FOUL: [
+        NORMAL_FOUL,
+        HAND_FOUL,
+        LATE_CARD_FOUL,
+        OUT_OF_GAME_FOUL,
+        PROTEST_FOUL,
+        SIMULATION_FOUL,
+        TIME_LOST_FOUL,
+        VIOLENT_FOUL,
+    ],
+    FREE_KICK: [
+        CORNER_FREE_KICK,
+        NORMAL_FREE_KICK,
+        CROSS_FREE_KICK,
+        SHOT_FREE_KICK,
+        GOAL_FREE_KICK,
+        PENALTY_FREE_KICK,
+        THROW_IN_FREE_KICK,
+    ],
+    INTERRUPTION: [BALL_OUT_INTERRUPTION, WHISTLE_INTERRUPTION],
+    OFFSIDE: [NORMAL_OFFSIDE],
+    OTHERS: [ACCELERATION_OTHERS, CLEARANCE_OTHERS, TOUCH_OTHERS],
+    PASS: [CROSS_PASS, HAND_PASS, HEAD_PASS, HIGH_PASS, LAUNCH_PASS, SIMPLE_PASS, SMART_PASS],
+    SAVE: [REFLEXES_SAVE, NORMAL_SAVE],
+    SHOT: [NORMAL_SHOT],
+}
 
 subevents2name = {
-    
-    AIR_DUEL:'air duel', GROUND_ATTACKING_DUEL:'ground attacking duel', 
-    GROUND_DEFENDING_DUEL:'ground defending duel', GROUND_LOOSE_BALL_DUEL:'ground loose ball duel',
-                  
-    NORMAL_FOUL:'normal foul', HAND_FOUL:'hand foul', LATE_CARD_FOUL:'late card foul', 
-    OUT_OF_GAME_FOUL:'out of game foul', PROTEST_FOUL:'protest foul', SIMULATION_FOUL:'simulation foul',
-    TIME_LOST_FOUL:'time lost foul', OUT_OF_GAME_FOUL:'out of game foul', PROTEST_FOUL:'protest foul',
-    SIMULATION_FOUL:'simulation foul', TIME_LOST_FOUL:'time lost foul', VIOLENT_FOUL:'violent foul',
-                  
-    CORNER_FREE_KICK:'corner free kick', NORMAL_FREE_KICK:'normal free kick', CROSS_FREE_KICK:'cross free kick',
-    SHOT_FREE_KICK:'shot free kick', GOAL_FREE_KICK:'goal free kick', PENALTY_FREE_KICK:'penalty free kick',
-    THROW_IN_FREE_KICK:'throw in free kick',
-                  
-    BALL_OUT_INTERRUPTION:'ball out interruption', WHISTLE_INTERRUPTION:'whistle interruption',
-                  
-    ACCELERATION_OTHERS:'accelleration', CLEARANCE_OTHERS:'clearance', TOUCH_OTHERS:'touch',
-                  
-    CROSS_PASS:'cross pass', HAND_PASS:'hand pass', HEAD_PASS:'head pass', HIGH_PASS:'high pass',
-    LAUNCH_PASS:'launch pass', SIMPLE_PASS:'simple pass', SMART_PASS:'smart pass',
-                  
-    REFLEXES_SAVE:'reflexes save', NORMAL_SAVE:'normal save', 
-                 
-    NORMAL_SHOT: 'shot', 
-                 
-    NORMAL_OFFSIDE: 'offside', 
-                 
-    GOALKEEPING_LEAVING_LINE: 'goalkeeping leaving line'
+    AIR_DUEL: "air duel",
+    GROUND_ATTACKING_DUEL: "ground attacking duel",
+    GROUND_DEFENDING_DUEL: "ground defending duel",
+    GROUND_LOOSE_BALL_DUEL: "ground loose ball duel",
+    NORMAL_FOUL: "normal foul",
+    HAND_FOUL: "hand foul",
+    LATE_CARD_FOUL: "late card foul",
+    OUT_OF_GAME_FOUL: "out of game foul",
+    PROTEST_FOUL: "protest foul",
+    SIMULATION_FOUL: "simulation foul",
+    TIME_LOST_FOUL: "time lost foul",
+    VIOLENT_FOUL: "violent foul",
+    CORNER_FREE_KICK: "corner free kick",
+    NORMAL_FREE_KICK: "normal free kick",
+    CROSS_FREE_KICK: "cross free kick",
+    SHOT_FREE_KICK: "shot free kick",
+    GOAL_FREE_KICK: "goal free kick",
+    PENALTY_FREE_KICK: "penalty free kick",
+    THROW_IN_FREE_KICK: "throw in free kick",
+    BALL_OUT_INTERRUPTION: "ball out interruption",
+    WHISTLE_INTERRUPTION: "whistle interruption",
+    ACCELERATION_OTHERS: "accelleration",
+    CLEARANCE_OTHERS: "clearance",
+    TOUCH_OTHERS: "touch",
+    CROSS_PASS: "cross pass",
+    HAND_PASS: "hand pass",
+    HEAD_PASS: "head pass",
+    HIGH_PASS: "high pass",
+    LAUNCH_PASS: "launch pass",
+    SIMPLE_PASS: "simple pass",
+    SMART_PASS: "smart pass",
+    REFLEXES_SAVE: "reflexes save",
+    NORMAL_SAVE: "normal save",
+    NORMAL_SHOT: "shot",
+    NORMAL_OFFSIDE: "offside",
+    GOALKEEPING_LEAVING_LINE: "goalkeeping leaving line",
 }
 
 
@@ -163,170 +210,251 @@ WON_TAG = 703
 ACCURATE_TAG = 1801
 NOT_ACCURATE_TAG = 1802
 NO_TAG = -1
+
 tag2name = {
-    GOAL_TAG: 'GOAL', OWN_GOAL_TAG: 'OWN GOAL', ASSIST_TAG: 'assist', KEY_PASS_TAG:'key pass', 
-    COUNTER_ATTACK_TAG:'counter attack', LEFT_FOOT_TAG:'left foot', RIGHT_FOOT_TAG:'right foot', 
-    HEAD_BODY_TAG:'head_body', DIRECT_TAG:'direct', INDIRECT_TAG:'indirect', 
-    DANGEROUS_BALL_LOST_TAG:'dangerous ball lost', BLOCKED_TAG:'blocked', HIGH_TAG:'high', 
-    LOW_TAG:'low', INTERCEPTION_TAG: 'interception', CLEARANCE_TAG:'clearance', OPPORTUNITY_TAG:'opportunity', 
-    FEINT_TAG:'feint', MISSED_BALL_TAG:'missed ball', FREE_SPACE_RIGHT_TAG:'free space right', 
-    FREE_SPACE_LEFT_TAG:'free space left', TAKE_ON_LEFT_TAG:'takeon left', TAKE_ON_RIGHT_TAG:'takeon right', 
-    SLIDING_TACKLE_TAG:'sliding tackle', ANTICIPATED_TAG:'anticipated', ANTICIPATION_TAG:'anticipation',
-    RED_CARD_TAG:'red card', YELLOW_CARD_TAG: 'yellow card', SECOND_YELLOW_CARD_TAG: 'second yellow card',
-    THROUGH_TAG:'through', FAIRPLAY_TAG:'fairplay', LOST_TAG:'lost', NEUTRAL_TAG:'neutral', 
-    WON_TAG:'won', ACCURATE_TAG:'accurate', NOT_ACCURATE_TAG:'not accurate', NO_TAG: 'no tag'
+    GOAL_TAG: "GOAL",
+    OWN_GOAL_TAG: "OWN GOAL",
+    ASSIST_TAG: "assist",
+    KEY_PASS_TAG: "key pass",
+    COUNTER_ATTACK_TAG: "counter attack",
+    LEFT_FOOT_TAG: "left foot",
+    RIGHT_FOOT_TAG: "right foot",
+    HEAD_BODY_TAG: "head_body",
+    DIRECT_TAG: "direct",
+    INDIRECT_TAG: "indirect",
+    DANGEROUS_BALL_LOST_TAG: "dangerous ball lost",
+    BLOCKED_TAG: "blocked",
+    HIGH_TAG: "high",
+    LOW_TAG: "low",
+    INTERCEPTION_TAG: "interception",
+    CLEARANCE_TAG: "clearance",
+    OPPORTUNITY_TAG: "opportunity",
+    FEINT_TAG: "feint",
+    MISSED_BALL_TAG: "missed ball",
+    FREE_SPACE_RIGHT_TAG: "free space right",
+    FREE_SPACE_LEFT_TAG: "free space left",
+    TAKE_ON_LEFT_TAG: "takeon left",
+    TAKE_ON_RIGHT_TAG: "takeon right",
+    SLIDING_TACKLE_TAG: "sliding tackle",
+    ANTICIPATED_TAG: "anticipated",
+    ANTICIPATION_TAG: "anticipation",
+    RED_CARD_TAG: "red card",
+    YELLOW_CARD_TAG: "yellow card",
+    SECOND_YELLOW_CARD_TAG: "second yellow card",
+    THROUGH_TAG: "through",
+    FAIRPLAY_TAG: "fairplay",
+    LOST_TAG: "lost",
+    NEUTRAL_TAG: "neutral",
+    WON_TAG: "won",
+    ACCURATE_TAG: "accurate",
+    NOT_ACCURATE_TAG: "not accurate",
+    NO_TAG: "no tag",
 }
 
 
 subevent2tags = {
-    
     ## OFFSIDE
     NORMAL_OFFSIDE: [],
-    
     ## LEAVING LINE
     GOALKEEPING_LEAVING_LINE: [],
-    
     ## SHOT
-    NORMAL_SHOT: 
-    [LEFT_FOOT_TAG, OPPORTUNITY_TAG, NOT_ACCURATE_TAG, ACCURATE_TAG, HEAD_BODY_TAG, RIGHT_FOOT_TAG, BLOCKED_TAG, GOAL_TAG, INTERCEPTION_TAG, COUNTER_ATTACK_TAG, ASSIST_TAG], 
-
-##### DUELS ########
-    
-GROUND_ATTACKING_DUEL:
-    [LOST_TAG, NOT_ACCURATE_TAG, WON_TAG, ACCURATE_TAG, TAKE_ON_RIGHT_TAG, ANTICIPATION_TAG, FREE_SPACE_LEFT_TAG, TAKE_ON_LEFT_TAG, NEUTRAL_TAG, FREE_SPACE_RIGHT_TAG, DANGEROUS_BALL_LOST_TAG, INTERCEPTION_TAG, COUNTER_ATTACK_TAG, SLIDING_TACKLE_TAG, OPPORTUNITY_TAG], 
-    
-AIR_DUEL: 
-    [LOST_TAG, NOT_ACCURATE_TAG, WON_TAG, ACCURATE_TAG, NEUTRAL_TAG, COUNTER_ATTACK_TAG, KEY_PASS_TAG, ASSIST_TAG], 
-        
-GROUND_LOOSE_BALL_DUEL: 
-    [LOST_TAG, NOT_ACCURATE_TAG, WON_TAG, ACCURATE_TAG, NEUTRAL_TAG, SLIDING_TACKLE_TAG, COUNTER_ATTACK_TAG, INTERCEPTION_TAG, DANGEROUS_BALL_LOST_TAG], 
-    
-    GROUND_DEFENDING_DUEL: [SLIDING_TACKLE_TAG, WON_TAG, ACCURATE_TAG, LOST_TAG, NOT_ACCURATE_TAG, TAKE_ON_LEFT_TAG, ANTICIPATED_TAG, FREE_SPACE_RIGHT_TAG, TAKE_ON_RIGHT_TAG, NEUTRAL_TAG, FREE_SPACE_LEFT_TAG, COUNTER_ATTACK_TAG], 
-  
-######### FREE KICKS ###########
-    
-SHOT_FREE_KICK: 
-    [RIGHT_FOOT_TAG, DIRECT_TAG, OPPORTUNITY_TAG, ACCURATE_TAG, BLOCKED_TAG, NOT_ACCURATE_TAG, LEFT_FOOT_TAG, INDIRECT_TAG, GOAL_TAG], 
-    
-CROSS_FREE_KICK: 
-    [HIGH_TAG, NOT_ACCURATE_TAG, ASSIST_TAG, ACCURATE_TAG, KEY_PASS_TAG], 
-    
-NORMAL_FREE_KICK: 
-    [ACCURATE_TAG, NOT_ACCURATE_TAG, KEY_PASS_TAG], 
-    
-CORNER_FREE_KICK: 
-    [HIGH_TAG, NOT_ACCURATE_TAG, ACCURATE_TAG, KEY_PASS_TAG, OPPORTUNITY_TAG, ASSIST_TAG], 
-    
-THROW_IN_FREE_KICK: 
-    [ACCURATE_TAG, NOT_ACCURATE_TAG, FAIRPLAY_TAG], 
-    
-PENALTY_FREE_KICK: 
-    [GOAL_TAG, RIGHT_FOOT_TAG, ACCURATE_TAG, LEFT_FOOT_TAG, NOT_ACCURATE_TAG], 
-    
-GOAL_FREE_KICK: [NO_TAG], 
-    
-    
- #### FOULS ####
-    
-PROTEST_FOUL: 
-    [YELLOW_CARD_TAG, RED_CARD_TAG, SECOND_YELLOW_CARD_TAG], 
-    
-SIMULATION_FOUL: 
-    [YELLOW_CARD_TAG, SECOND_YELLOW_CARD_TAG, RED_CARD_TAG], 
-    
-TIME_LOST_FOUL: 
-    [YELLOW_CARD_TAG, SECOND_YELLOW_CARD_TAG, RED_CARD_TAG], 
-    
-VIOLENT_FOUL: 
-    [YELLOW_CARD_TAG, SECOND_YELLOW_CARD_TAG, RED_CARD_TAG], 
-    
-NORMAL_FOUL: 
-    [YELLOW_CARD_TAG, SECOND_YELLOW_CARD_TAG, RED_CARD_TAG], 
-    
-HAND_FOUL: 
-    [YELLOW_CARD_TAG, SECOND_YELLOW_CARD_TAG, RED_CARD_TAG], 
-    
-LATE_CARD_FOUL: 
-    [YELLOW_CARD_TAG, SECOND_YELLOW_CARD_TAG, RED_CARD_TAG], 
-    
-OUT_OF_GAME_FOUL: 
-    [YELLOW_CARD_TAG, SECOND_YELLOW_CARD_TAG, RED_CARD_TAG], 
-    
-#WHISTLE_INTERRUPTION: [], 
-    
-#BALL_OUT_INTERRUPTION: [], 
-    
- ### TOUCHS ####
-    
-TOUCH_OTHERS: 
-    [INTERCEPTION_TAG, MISSED_BALL_TAG, OPPORTUNITY_TAG, COUNTER_ATTACK_TAG, FEINT_TAG, DANGEROUS_BALL_LOST_TAG, ASSIST_TAG, OWN_GOAL_TAG], 
-    
-CLEARANCE_OTHERS: 
-    [INTERCEPTION_TAG, NOT_ACCURATE_TAG, ACCURATE_TAG, COUNTER_ATTACK_TAG, FAIRPLAY_TAG, MISSED_BALL_TAG, OWN_GOAL_TAG], 
-    
-ACCELERATION_OTHERS: 
-    [NOT_ACCURATE_TAG, ACCURATE_TAG, COUNTER_ATTACK_TAG, INTERCEPTION_TAG], 
-    
-##### SAVES ####   
-    
-NORMAL_SAVE: 
-    [ACCURATE_TAG, GOAL_TAG, NOT_ACCURATE_TAG, COUNTER_ATTACK_TAG], 
-    
-REFLEXES_SAVE: 
-    [ACCURATE_TAG, GOAL_TAG, NOT_ACCURATE_TAG, COUNTER_ATTACK_TAG], 
-  
-    
-####  PASSES  #####################
-    
-HEAD_PASS: 
-    [INTERCEPTION_TAG, ACCURATE_TAG, NOT_ACCURATE_TAG, ASSIST_TAG, COUNTER_ATTACK_TAG, KEY_PASS_TAG, DANGEROUS_BALL_LOST_TAG], 
-    
-HIGH_PASS: 
-    [NOT_ACCURATE_TAG, ACCURATE_TAG, KEY_PASS_TAG, THROUGH_TAG, COUNTER_ATTACK_TAG, INTERCEPTION_TAG, ASSIST_TAG], 
-    
-CROSS_PASS: 
-    [LEFT_FOOT_TAG, HIGH_TAG, NOT_ACCURATE_TAG, RIGHT_FOOT_TAG, ACCURATE_TAG, KEY_PASS_TAG, ASSIST_TAG, BLOCKED_TAG, COUNTER_ATTACK_TAG, INTERCEPTION_TAG], 
-    
-HAND_PASS: 
-    [ACCURATE_TAG, NOT_ACCURATE_TAG, INTERCEPTION_TAG, COUNTER_ATTACK_TAG, FAIRPLAY_TAG], 
-    
-SMART_PASS: 
-    [NOT_ACCURATE_TAG, ACCURATE_TAG, THROUGH_TAG, KEY_PASS_TAG, ASSIST_TAG, COUNTER_ATTACK_TAG, INTERCEPTION_TAG],
-    
-LAUNCH_PASS: 
-    [ACCURATE_TAG, NOT_ACCURATE_TAG, INTERCEPTION_TAG, FAIRPLAY_TAG, DANGEROUS_BALL_LOST_TAG], 
-    
-SIMPLE_PASS: [ACCURATE_TAG, NOT_ACCURATE_TAG, INTERCEPTION_TAG, COUNTER_ATTACK_TAG, KEY_PASS_TAG, FAIRPLAY_TAG, DANGEROUS_BALL_LOST_TAG, ASSIST_TAG, OWN_GOAL_TAG]
-    
+    NORMAL_SHOT: [
+        LEFT_FOOT_TAG,
+        OPPORTUNITY_TAG,
+        NOT_ACCURATE_TAG,
+        ACCURATE_TAG,
+        HEAD_BODY_TAG,
+        RIGHT_FOOT_TAG,
+        BLOCKED_TAG,
+        GOAL_TAG,
+        INTERCEPTION_TAG,
+        COUNTER_ATTACK_TAG,
+        ASSIST_TAG,
+    ],
+    ##### DUELS ########
+    GROUND_ATTACKING_DUEL: [
+        LOST_TAG,
+        NOT_ACCURATE_TAG,
+        WON_TAG,
+        ACCURATE_TAG,
+        TAKE_ON_RIGHT_TAG,
+        ANTICIPATION_TAG,
+        FREE_SPACE_LEFT_TAG,
+        TAKE_ON_LEFT_TAG,
+        NEUTRAL_TAG,
+        FREE_SPACE_RIGHT_TAG,
+        DANGEROUS_BALL_LOST_TAG,
+        INTERCEPTION_TAG,
+        COUNTER_ATTACK_TAG,
+        SLIDING_TACKLE_TAG,
+        OPPORTUNITY_TAG,
+    ],
+    AIR_DUEL: [
+        LOST_TAG,
+        NOT_ACCURATE_TAG,
+        WON_TAG,
+        ACCURATE_TAG,
+        NEUTRAL_TAG,
+        COUNTER_ATTACK_TAG,
+        KEY_PASS_TAG,
+        ASSIST_TAG,
+    ],
+    GROUND_LOOSE_BALL_DUEL: [
+        LOST_TAG,
+        NOT_ACCURATE_TAG,
+        WON_TAG,
+        ACCURATE_TAG,
+        NEUTRAL_TAG,
+        SLIDING_TACKLE_TAG,
+        COUNTER_ATTACK_TAG,
+        INTERCEPTION_TAG,
+        DANGEROUS_BALL_LOST_TAG,
+    ],
+    GROUND_DEFENDING_DUEL: [
+        SLIDING_TACKLE_TAG,
+        WON_TAG,
+        ACCURATE_TAG,
+        LOST_TAG,
+        NOT_ACCURATE_TAG,
+        TAKE_ON_LEFT_TAG,
+        ANTICIPATED_TAG,
+        FREE_SPACE_RIGHT_TAG,
+        TAKE_ON_RIGHT_TAG,
+        NEUTRAL_TAG,
+        FREE_SPACE_LEFT_TAG,
+        COUNTER_ATTACK_TAG,
+    ],
+    ######### FREE KICKS ###########
+    SHOT_FREE_KICK: [
+        RIGHT_FOOT_TAG,
+        DIRECT_TAG,
+        OPPORTUNITY_TAG,
+        ACCURATE_TAG,
+        BLOCKED_TAG,
+        NOT_ACCURATE_TAG,
+        LEFT_FOOT_TAG,
+        INDIRECT_TAG,
+        GOAL_TAG,
+    ],
+    CROSS_FREE_KICK: [HIGH_TAG, NOT_ACCURATE_TAG, ASSIST_TAG, ACCURATE_TAG, KEY_PASS_TAG],
+    NORMAL_FREE_KICK: [ACCURATE_TAG, NOT_ACCURATE_TAG, KEY_PASS_TAG],
+    CORNER_FREE_KICK: [HIGH_TAG, NOT_ACCURATE_TAG, ACCURATE_TAG, KEY_PASS_TAG, OPPORTUNITY_TAG, ASSIST_TAG],
+    THROW_IN_FREE_KICK: [ACCURATE_TAG, NOT_ACCURATE_TAG, FAIRPLAY_TAG],
+    PENALTY_FREE_KICK: [GOAL_TAG, RIGHT_FOOT_TAG, ACCURATE_TAG, LEFT_FOOT_TAG, NOT_ACCURATE_TAG],
+    GOAL_FREE_KICK: [NO_TAG],
+    #### FOULS ####
+    PROTEST_FOUL: [YELLOW_CARD_TAG, RED_CARD_TAG, SECOND_YELLOW_CARD_TAG],
+    SIMULATION_FOUL: [YELLOW_CARD_TAG, SECOND_YELLOW_CARD_TAG, RED_CARD_TAG],
+    TIME_LOST_FOUL: [YELLOW_CARD_TAG, SECOND_YELLOW_CARD_TAG, RED_CARD_TAG],
+    VIOLENT_FOUL: [YELLOW_CARD_TAG, SECOND_YELLOW_CARD_TAG, RED_CARD_TAG],
+    NORMAL_FOUL: [YELLOW_CARD_TAG, SECOND_YELLOW_CARD_TAG, RED_CARD_TAG],
+    HAND_FOUL: [YELLOW_CARD_TAG, SECOND_YELLOW_CARD_TAG, RED_CARD_TAG],
+    LATE_CARD_FOUL: [YELLOW_CARD_TAG, SECOND_YELLOW_CARD_TAG, RED_CARD_TAG],
+    OUT_OF_GAME_FOUL: [YELLOW_CARD_TAG, SECOND_YELLOW_CARD_TAG, RED_CARD_TAG],
+    # WHISTLE_INTERRUPTION: [],
+    # BALL_OUT_INTERRUPTION: [],
+    ### TOUCHS ####
+    TOUCH_OTHERS: [
+        INTERCEPTION_TAG,
+        MISSED_BALL_TAG,
+        OPPORTUNITY_TAG,
+        COUNTER_ATTACK_TAG,
+        FEINT_TAG,
+        DANGEROUS_BALL_LOST_TAG,
+        ASSIST_TAG,
+        OWN_GOAL_TAG,
+    ],
+    CLEARANCE_OTHERS: [
+        INTERCEPTION_TAG,
+        NOT_ACCURATE_TAG,
+        ACCURATE_TAG,
+        COUNTER_ATTACK_TAG,
+        FAIRPLAY_TAG,
+        MISSED_BALL_TAG,
+        OWN_GOAL_TAG,
+    ],
+    ACCELERATION_OTHERS: [NOT_ACCURATE_TAG, ACCURATE_TAG, COUNTER_ATTACK_TAG, INTERCEPTION_TAG],
+    ##### SAVES ####
+    NORMAL_SAVE: [ACCURATE_TAG, GOAL_TAG, NOT_ACCURATE_TAG, COUNTER_ATTACK_TAG],
+    REFLEXES_SAVE: [ACCURATE_TAG, GOAL_TAG, NOT_ACCURATE_TAG, COUNTER_ATTACK_TAG],
+    ####  PASSES  #####################
+    HEAD_PASS: [
+        INTERCEPTION_TAG,
+        ACCURATE_TAG,
+        NOT_ACCURATE_TAG,
+        ASSIST_TAG,
+        COUNTER_ATTACK_TAG,
+        KEY_PASS_TAG,
+        DANGEROUS_BALL_LOST_TAG,
+    ],
+    HIGH_PASS: [
+        NOT_ACCURATE_TAG,
+        ACCURATE_TAG,
+        KEY_PASS_TAG,
+        THROUGH_TAG,
+        COUNTER_ATTACK_TAG,
+        INTERCEPTION_TAG,
+        ASSIST_TAG,
+    ],
+    CROSS_PASS: [
+        LEFT_FOOT_TAG,
+        HIGH_TAG,
+        NOT_ACCURATE_TAG,
+        RIGHT_FOOT_TAG,
+        ACCURATE_TAG,
+        KEY_PASS_TAG,
+        ASSIST_TAG,
+        BLOCKED_TAG,
+        COUNTER_ATTACK_TAG,
+        INTERCEPTION_TAG,
+    ],
+    HAND_PASS: [ACCURATE_TAG, NOT_ACCURATE_TAG, INTERCEPTION_TAG, COUNTER_ATTACK_TAG, FAIRPLAY_TAG],
+    SMART_PASS: [
+        NOT_ACCURATE_TAG,
+        ACCURATE_TAG,
+        THROUGH_TAG,
+        KEY_PASS_TAG,
+        ASSIST_TAG,
+        COUNTER_ATTACK_TAG,
+        INTERCEPTION_TAG,
+    ],
+    LAUNCH_PASS: [ACCURATE_TAG, NOT_ACCURATE_TAG, INTERCEPTION_TAG, FAIRPLAY_TAG, DANGEROUS_BALL_LOST_TAG],
+    SIMPLE_PASS: [
+        ACCURATE_TAG,
+        NOT_ACCURATE_TAG,
+        INTERCEPTION_TAG,
+        COUNTER_ATTACK_TAG,
+        KEY_PASS_TAG,
+        FAIRPLAY_TAG,
+        DANGEROUS_BALL_LOST_TAG,
+        ASSIST_TAG,
+        OWN_GOAL_TAG,
+    ],
 }
 
-#subevent2outcome={PROTEST_FOUL: 
+# subevent2outcome={PROTEST_FOUL:
 #    subevent2tags[PROTEST_FOUL]+ [NO_TAG],
-    
-#SIMULATION_FOUL: 
-#    subevent2tags[SIMULATION_FOUL]+[ NO_TAG], 
-    
-#TIME_LOST_FOUL: 
-#    subevent2tags[TIME_LOST_FOUL]+[NO_TAG], 
-    
-#VIOLENT_FOUL: 
+
+# SIMULATION_FOUL:
+#    subevent2tags[SIMULATION_FOUL]+[ NO_TAG],
+
+# TIME_LOST_FOUL:
+#    subevent2tags[TIME_LOST_FOUL]+[NO_TAG],
+
+# VIOLENT_FOUL:
 #    subevent2tags[VIOLENT_FOUL]+[NO_TAG],
-    
-#NORMAL_FOUL: 
+
+# NORMAL_FOUL:
 #    subevent2tags[NORMAL_FOUL]+[NO_TAG],
-    
-#HAND_FOUL: 
-#    subevent2tags[HAND_FOUL]+[NO_TAG ], 
-    
-#LATE_CARD_FOUL: 
-#    subevent2tags[LATE_CARD_FOUL]+[ NO_TAG], 
-    
-#OUT_OF_GAME_FOUL: 
+
+# HAND_FOUL:
+#    subevent2tags[HAND_FOUL]+[NO_TAG ],
+
+# LATE_CARD_FOUL:
+#    subevent2tags[LATE_CARD_FOUL]+[ NO_TAG],
+
+# OUT_OF_GAME_FOUL:
 #    subevent2tags[OUT_OF_GAME_FOUL]+[NO_TAG],
 #  'default':[ACCURATE_TAG, NOT_ACCURATE_TAG],
 #  TOUCH_OTHERS:subevent2tags[TOUCH_OTHERS],
-#}
-
-
-
-
+# }

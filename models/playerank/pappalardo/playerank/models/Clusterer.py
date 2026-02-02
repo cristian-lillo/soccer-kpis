@@ -1,31 +1,15 @@
-# /usr/local/bin/python
-from collections import defaultdict, OrderedDict, Counter
-import numpy as np
-from scipy import optimize
-from scipy.stats import gaussian_kde
-#from utils import *
-from sklearn.base import BaseEstimator
-from sklearn.svm import LinearSVC
-from sklearn.model_selection import cross_val_score
-from sklearn.dummy import DummyClassifier
-from sklearn.feature_selection import VarianceThreshold
-from sklearn.model_selection import GridSearchCV, StratifiedKFold
-from sklearn.feature_selection import RFECV
-from scipy.spatial.distance import euclidean
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.metrics import silhouette_score, silhouette_samples
-from sklearn.cluster import KMeans, MiniBatchKMeans
-from sklearn.base import BaseEstimator, ClusterMixin
-from joblib import Parallel, delayed
-
-from sklearn.metrics.pairwise import pairwise_distances
 from itertools import combinations
-from sklearn.utils import check_random_state
-from sklearn.preprocessing import MinMaxScaler
-import json
 
-def scalable_silhouette_score(X, labels, metric='euclidean', sample_size=None,
-                           random_state=None, n_jobs=1, **kwds):
+import numpy as np
+from joblib import Parallel, delayed
+from scipy.spatial.distance import euclidean
+from sklearn.base import BaseEstimator, ClusterMixin
+from sklearn.cluster import MiniBatchKMeans
+from sklearn.metrics.pairwise import pairwise_distances
+from sklearn.utils import check_random_state
+
+
+def scalable_silhouette_score(X, labels, metric="euclidean", sample_size=None, random_state=None, n_jobs=1, **kwds):
     """
     Compute the mean Silhouette Coefficient of all samples.
     The Silhouette Coefficient is compute using the mean intra-cluster distance (a)
@@ -86,15 +70,14 @@ def scalable_silhouette_score(X, labels, metric='euclidean', sample_size=None,
         random_state = check_random_state(random_state)
         indices = random_state.permutation(X.shape[0])[:sample_size]
         if metric == "precomputed":
-            raise ValueError('Distance matrix cannot be precomputed')
+            raise ValueError("Distance matrix cannot be precomputed")
         else:
             X, labels = X[indices], labels[indices]
 
-    return np.mean(scalable_silhouette_samples(
-        X, labels, metric=metric, n_jobs=n_jobs, **kwds))
+    return np.mean(scalable_silhouette_samples(X, labels, metric=metric, n_jobs=n_jobs, **kwds))
 
 
-def scalable_silhouette_samples(X, labels, metric='euclidean', n_jobs=1, **kwds):
+def scalable_silhouette_samples(X, labels, metric="euclidean", n_jobs=1, **kwds):
     """
     Compute the Silhouette Coefficient for each sample. The Silhoeutte Coefficient
     is a measure of how well samples are clustered with samples that are similar to themselves.
@@ -141,13 +124,12 @@ def scalable_silhouette_samples(X, labels, metric='euclidean', n_jobs=1, **kwds)
         and Applied Mathematics 20: 53-65. doi:10.1016/0377-0427(87)90125-7.
     http://en.wikipedia.org/wiki/Silhouette_(clustering)
     """
-    A = _intra_cluster_distances_block(X, labels, metric, n_jobs=n_jobs,
-                                       **kwds)
-    B = _nearest_cluster_distance_block(X, labels, metric, n_jobs=n_jobs,
-                                        **kwds)
+    A = _intra_cluster_distances_block(X, labels, metric, n_jobs=n_jobs, **kwds)
+    B = _nearest_cluster_distance_block(X, labels, metric, n_jobs=n_jobs, **kwds)
     sil_samples = (B - A) / np.maximum(A, B)
     # nan values are for clusters of size 1, and should be 0
     return np.nan_to_num(sil_samples)
+
 
 def _intra_cluster_distances_block(X, labels, metric, n_jobs=1, **kwds):
     """
@@ -179,9 +161,9 @@ def _intra_cluster_distances_block(X, labels, metric, n_jobs=1, **kwds):
     """
     intra_dist = np.zeros(labels.size, dtype=float)
     values = Parallel(n_jobs=n_jobs)(
-            delayed(_intra_cluster_distances_block_)
-                (X[np.where(labels == label)[0]], metric, **kwds)
-                for label in np.unique(labels))
+        delayed(_intra_cluster_distances_block_)(X[np.where(labels == label)[0]], metric, **kwds)
+        for label in np.unique(labels)
+    )
     for label, values_ in zip(np.unique(labels), values):
         intra_dist[np.where(labels == label)[0]] = values_
     return intra_dist
@@ -223,32 +205,33 @@ def _nearest_cluster_distance_block(X, labels, metric, n_jobs=1, **kwds):
     unique_labels = np.unique(labels)
 
     values = Parallel(n_jobs=n_jobs)(
-            delayed(_nearest_cluster_distance_block_)(
-                X[np.where(labels == label_a)[0]],
-                X[np.where(labels == label_b)[0]],
-                metric, **kwds)
-                for label_a, label_b in combinations(unique_labels, 2))
+        delayed(_nearest_cluster_distance_block_)(
+            X[np.where(labels == label_a)[0]], X[np.where(labels == label_b)[0]], metric, **kwds
+        )
+        for label_a, label_b in combinations(unique_labels, 2)
+    )
 
-    for (label_a, label_b), (values_a, values_b) in \
-            zip(combinations(unique_labels, 2), values):
-
-            indices_a = np.where(labels == label_a)[0]
-            inter_dist[indices_a] = np.minimum(values_a, inter_dist[indices_a])
-            del indices_a
-            indices_b = np.where(labels == label_b)[0]
-            inter_dist[indices_b] = np.minimum(values_b, inter_dist[indices_b])
-            del indices_b
+    for (label_a, label_b), (values_a, values_b) in zip(combinations(unique_labels, 2), values):
+        indices_a = np.where(labels == label_a)[0]
+        inter_dist[indices_a] = np.minimum(values_a, inter_dist[indices_a])
+        del indices_a
+        indices_b = np.where(labels == label_b)[0]
+        inter_dist[indices_b] = np.minimum(values_b, inter_dist[indices_b])
+        del indices_b
     return inter_dist
+
 
 def _intra_cluster_distances_block_(subX, metric, **kwds):
     distances = pairwise_distances(subX, metric=metric, **kwds)
     return distances.sum(axis=1) / (distances.shape[0] - 1)
+
 
 def _nearest_cluster_distance_block_(subX_a, subX_b, metric, **kwds):
     dist = pairwise_distances(subX_a, subX_b, metric=metric, **kwds)
     dist_a = dist.mean(axis=1)
     dist_b = dist.mean(axis=0)
     return dist_a, dist_b
+
 
 class Clusterer(BaseEstimator, ClusterMixin):
     """Performance clustering
@@ -305,8 +288,7 @@ class Clusterer(BaseEstimator, ClusterMixin):
     kmeans: scikit-learn KMeans object
     """
 
-    def __init__(self, k_range=(2, 15), border_threshold=0.2, verbose=False, random_state=42,
-                sample_size=None):
+    def __init__(self, k_range=(2, 15), border_threshold=0.2, verbose=False, random_state=42, sample_size=None):
         self.k_range = k_range
         self.border_threshold = border_threshold
         self.verbose = verbose
@@ -317,44 +299,45 @@ class Clusterer(BaseEstimator, ClusterMixin):
 
     def _find_clusters(self, X, make_plot=True):
         if self.verbose:
-            print ('FITTING kmeans...\n')
-            print ('n_clust\t|silhouette')
-            print ('---------------------')
+            print("FITTING kmeans...\n")
+            print("n_clust\t|silhouette")
+            print("---------------------")
 
         self.k2silhouettes_ = {}
         kmin, kmax = self.k_range
         range_n_clusters = range(kmin, kmax + 1)
         best_k, best_silhouette = 0, 0.0
         for k in range_n_clusters:
-
             # computation
-            kmeans = MiniBatchKMeans(n_clusters=k, init='k-means++', max_iter=1000, n_init=1,
-                               random_state =self.random_state)
+            kmeans = MiniBatchKMeans(
+                n_clusters=k, init="k-means++", max_iter=1000, n_init=1, random_state=self.random_state
+            )
             kmeans.fit(X)
             cluster_labels = kmeans.labels_
 
-            silhouette = scalable_silhouette_score(X, cluster_labels,
-                                          sample_size=self.sample_size,
-                                          random_state=self.random_state)
+            silhouette = scalable_silhouette_score(
+                X, cluster_labels, sample_size=self.sample_size, random_state=self.random_state
+            )
             if self.verbose:
-                print ('%s\t|%s' % (k, round(silhouette, 4)))
+                print(f"{k}\t|{round(silhouette, 4)}")
 
             if silhouette >= best_silhouette:
                 best_silhouette = silhouette
                 best_k = k
-                #best_silhouette_samples = ss
+                # best_silhouette_samples = ss
 
             self.k2silhouettes_[k] = silhouette
 
-        kmeans = MiniBatchKMeans(n_clusters=best_k, init='k-means++', max_iter=10000, n_init=1,
-                                 random_state=self.random_state)
+        kmeans = MiniBatchKMeans(
+            n_clusters=best_k, init="k-means++", max_iter=10000, n_init=1, random_state=self.random_state
+        )
         kmeans.fit(X)
         self.kmeans_ = kmeans
         self.n_clusters_ = best_k
         self.cluster_centers_ = kmeans.cluster_centers_
         self.labels_ = kmeans.labels_
         if self.verbose:
-            print ('Best: n_clust=%s (silhouette=%s)\n' % (best_k, round(best_silhouette, 4)))
+            print("Best: n_clust=%s (silhouette=%s)\n" % (best_k, round(best_silhouette, 4)))
 
     def _cluster_borderline(self, X):
         """
@@ -362,7 +345,7 @@ class Clusterer(BaseEstimator, ClusterMixin):
         specified in the constructor
         """
         if self.verbose:
-            print ('FINDING hybrid centers of performance...\n')
+            print("FINDING hybrid centers of performance...\n")
 
         self.labels_ = [[] for i in range(len(X))]
 
@@ -380,7 +363,7 @@ class Clusterer(BaseEstimator, ClusterMixin):
 
         return ss
 
-    def _generate_matrix(self, ss, kind = 'multi'):
+    def _generate_matrix(self, ss, kind="multi"):
         """
         Generate a matrix for optimizing the predict function
         """
@@ -390,7 +373,7 @@ class Clusterer(BaseEstimator, ClusterMixin):
         for i in range(0, 101):
             for j in range(0, 101):
                 X.append([i, j])
-        if kind == 'multi':
+        if kind == "multi":
             multi_labels = self._predict_with_silhouette(X, ss)
             for row, labels in zip(X, multi_labels):
                 matrix[tuple(row)] = labels
@@ -399,23 +382,25 @@ class Clusterer(BaseEstimator, ClusterMixin):
                 matrix[tuple(row)] = labels
         self._matrix = matrix
 
-    def get_clusters_matrix(self, kind = 'single'):
+    def get_clusters_matrix(self, kind="single"):
         roles_matrix = {}
-        m= self._matrix.items()
+        m = self._matrix.items()
         # if kind != 'single':
         #     m= self._matrix.items()
         #
         # else:
         #     m = self._matrix_single.items()
 
-        for k,v in  m:
-            x,y = int(k[0]),int(k[1])
+        for k, v in m:
+            x, y = int(k[0]), int(k[1])
             if k[0] not in roles_matrix:
                 roles_matrix[x] = {}
-            roles_matrix[x][y] = "-".join(map(str,v)) if kind !='single' else int(v) #casting with python int, otherwise it's not json serializable
+            roles_matrix[x][y] = (
+                "-".join(map(str, v)) if kind != "single" else int(v)
+            )  # casting with python int, otherwise it's not json serializable
         return roles_matrix
 
-    def fit(self, player_ids, match_ids, dataframe, y=None, kind='single', filename='clusters'):
+    def fit(self, player_ids, match_ids, dataframe, y=None, kind="single", filename="clusters"):
         """
         Compute performance clustering.
 
@@ -433,19 +418,14 @@ class Clusterer(BaseEstimator, ClusterMixin):
         self.kind_ = kind
         X = dataframe.values
 
-        self._find_clusters(X)      # find the clusters with kmeans
-        if kind != 'single':
-
-
-            silhouette_scores = self._cluster_borderline(X) # assign multiclusters to borderline performances
-            self._generate_matrix(silhouette_scores)    # generate the matrix for optimizing the predict function
+        self._find_clusters(X)  # find the clusters with kmeans
+        if kind != "single":
+            silhouette_scores = self._cluster_borderline(X)  # assign multiclusters to borderline performances
+            self._generate_matrix(silhouette_scores)  # generate the matrix for optimizing the predict function
         else:
-            self._generate_matrix(None, kind = 'single') #no silhouette scores if kind single
+            self._generate_matrix(None, kind="single")  # no silhouette scores if kind single
         if self.verbose:
-            print ("DONE.")
-
-
-
+            print("DONE.")
 
         return self
 
@@ -484,7 +464,7 @@ class Clusterer(BaseEstimator, ClusterMixin):
         multi_labels : array, shape [n_samples,]
             Index of the cluster each sample belongs to.
         """
-        if self.kind_ == 'single':
+        if self.kind_ == "single":
             return self.kmeans_predict(X)
         else:
             multi_labels = []
