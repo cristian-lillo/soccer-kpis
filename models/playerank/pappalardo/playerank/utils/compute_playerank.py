@@ -1,3 +1,6 @@
+import sys
+from pathlib import Path
+
 from ..features import (
     centerOfPerformanceFeature,
     matchPlayedFeatures,
@@ -7,40 +10,49 @@ from ..features import (
     roleFeatures,
 )
 
-weigths_file = "playerank/conf/features_weights.json"
+# Add the project root to the Python path
+sys.path.append(str(Path(__file__).parents[4]))
+
+from config import paths
+
+# Define Wyscout data file paths
+EVENTS_PATHS = str(paths.WYSCOUT_PAPPALARDO_DIR / "events" / "*.json")
+MATCHES_PATHS = str(paths.WYSCOUT_PAPPALARDO_DIR / "matches" / "*.json")
+PLAYERS_FILEPATH = str(paths.WYSCOUT_PAPPALARDO_DIR / "players.json")
+
+# Define obtained features file paths
+FEATURE_WEIGHTS_FILEPATH = str(Path(__file__).parents[2] / "feature_weights.json")
+ROLE_MATRIX_FILEPATH = str(Path(__file__).parents[2] / "role_matrix.json")
 
 qualityFeat = qualityFeatures.qualityFeatures()
 quality = qualityFeat.createFeature(
-    events_path="playerank/data/events", players_file="playerank/data/players.json", entity="player"
+    events_path=EVENTS_PATHS,
+    players_file=PLAYERS_FILEPATH,
+    entity="player",
 )
-
 
 prFeat = playerankFeatures.playerankFeatures()
 prFeat.set_features([quality])
-pr = prFeat.createFeature(weigths_file)
-
+pr = prFeat.createFeature(weights_file=FEATURE_WEIGHTS_FILEPATH)
 
 matchPlayedFeat = matchPlayedFeatures.matchPlayedFeatures()
 matchplayed = matchPlayedFeat.createFeature(
-    matches_path="playerank/data/matches", players_file="playerank/data/players.json"
+    matches_path=MATCHES_PATHS,
+    players_file=PLAYERS_FILEPATH,
 )
 
 center_performance = centerOfPerformanceFeature.centerOfPerformanceFeature()
-
 center_performance = center_performance.createFeature(
-    events_path="playerank/data/events", players_file="playerank/data/players.json"
+    events_path=EVENTS_PATHS,
+    players_file=PLAYERS_FILEPATH,
 )
-
 
 roleFeat = roleFeatures.roleFeatures()
 roleFeat.set_features([center_performance])
-roles = roleFeat.createFeature(matrix_role_file="playerank/conf/role_matrix.json")
-
+roles = roleFeat.createFeature(matrix_role_file=ROLE_MATRIX_FILEPATH)
 
 aggregation = plainAggregation.plainAggregation()
-
 aggregation.set_features([matchplayed, pr, roles])
-
 df = aggregation.aggregate(to_dataframe=True)
 
 print(df.head())
