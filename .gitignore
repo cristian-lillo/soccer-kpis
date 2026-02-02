@@ -1,6 +1,9 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 
+# Distribution / packaging
+*.egg-info/
+
 # Jupyter Notebook
 .ipynb_checkpoints
 
@@ -29,3 +32,6 @@ venv/
 
 # Model data folders
 /models/*/data/
+
+# Output folders
+/output/**/*.csv
