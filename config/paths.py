@@ -12,6 +12,9 @@ PROJECT_ROOT = Path(__file__).parents[1].resolve()
 # Define data directory (soccer-kpis/data)
 DATA_DIR = PROJECT_ROOT / "data"
 
+# Papers data
+PAPERS_DATA_DIR = DATA_DIR / "papers"
+
 # StatsBomb (soccer-kpis/data/statsbomb)
 STATSBOMB_DIR = DATA_DIR / "statsbomb"
 STATSBOMB_MATCHES_DIR = STATSBOMB_DIR / "matches"
@@ -56,6 +59,7 @@ def setup_project_directories():
     """Create all necessary project directories if they do not exist."""
     required_directories = [
         DATA_DIR,
+        PAPERS_DATA_DIR,
         STATSBOMB_DIR,
         STATSBOMB_MATCHES_DIR,
         STATSBOMB_LINEUPS_DIR,
