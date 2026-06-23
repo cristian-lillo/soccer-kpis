@@ -12,15 +12,18 @@ PREMIER_LEAGUE = {
     "country_name": "England",
     "competition_name": "Premier League",
     "season_name": "2015/2016",
+    "display_name": "Premier League 2015/2016",
     "competition_id": 2,
     "season_id": 27,
 }
+
 
 LA_LIGA = {
     "label": "la_liga",
     "country_name": "Spain",
     "competition_name": "La Liga",
     "season_name": "2015/2016",
+    "display_name": "La Liga 2015/2016",
     "competition_id": 11,
     "season_id": 27,
 }
@@ -30,6 +33,7 @@ SERIE_A = {
     "country_name": "Italy",
     "competition_name": "Serie A",
     "season_name": "2015/2016",
+    "display_name": "Serie A 2015/2016",
     "competition_id": 12,
     "season_id": 27,
 }
@@ -39,6 +43,7 @@ BUNDESLIGA = {
     "country_name": "Germany",
     "competition_name": "1. Bundesliga",
     "season_name": "2015/2016",
+    "display_name": "Bundesliga 2015/2016",
     "competition_id": 9,
     "season_id": 27,
 }
@@ -48,6 +53,7 @@ LIGUE_1 = {
     "country_name": "France",
     "competition_name": "Ligue 1",
     "season_name": "2015/2016",
+    "display_name": "Ligue 1 2015/2016",
     "competition_id": 7,
     "season_id": 27,
 }
@@ -57,6 +63,7 @@ WORLD_CUP_2018 = {
     "country_name": "International",
     "competition_name": "FIFA World Cup",
     "season_name": "2018",
+    "display_name": "FIFA World Cup 2018",
     "competition_id": 43,
     "season_id": 3,
 }
@@ -66,6 +73,7 @@ WORLD_CUP_2022 = {
     "country_name": "International",
     "competition_name": "FIFA World Cup",
     "season_name": "2022",
+    "display_name": "FIFA World Cup 2022",
     "competition_id": 43,
     "season_id": 106,
 }
@@ -75,6 +83,7 @@ EURO_2020 = {
     "country_name": "Europe",
     "competition_name": "UEFA Euro",
     "season_name": "2020",
+    "display_name": "UEFA Euro 2020",
     "competition_id": 55,
     "season_id": 43,
 }
@@ -84,6 +93,7 @@ EURO_2024 = {
     "country_name": "Europe",
     "competition_name": "UEFA Euro",
     "season_name": "2024",
+    "display_name": "UEFA Euro 2024",
     "competition_id": 55,
     "season_id": 282,
 }
@@ -93,6 +103,7 @@ COPA_AMERICA_2024 = {
     "country_name": "South America",
     "competition_name": "Copa America",
     "season_name": "2024",
+    "display_name": "Copa America 2024",
     "competition_id": 223,
     "season_id": 282,
 }
