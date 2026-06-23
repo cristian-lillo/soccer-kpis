@@ -8,6 +8,7 @@ version = "0.1.0"
 dependencies = [
     "jupyter",
     "kloppy",
+    "matplotlib",
     "mplsoccer",
     "multimethod==1.12",  # To fix ImportError: cannot import name 'overload' from 'multimethod'
     "pandas",
