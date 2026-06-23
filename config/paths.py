@@ -54,6 +54,9 @@ MODEL_OUTPUT_DIRECTORIES = [
     VAEP_OUTPUT_DIR,
 ]
 
+# Define figures output directory (soccer-kpis/figures)
+FIGURES_OUTPUT_DIR = PROJECT_ROOT / "figures"
+
 # Define scripts directory (soccer-kpis/scripts)
 SCRIPTS_DIR = PROJECT_ROOT / "scripts"
 
@@ -80,6 +83,7 @@ def setup_project_directories():
         OPTA_POINTS_OUTPUT_DIR,
         PLAYERANK_OUTPUT_DIR,
         VAEP_OUTPUT_DIR,
+        FIGURES_OUTPUT_DIR,
         SCRIPTS_DIR,
     ]
 
