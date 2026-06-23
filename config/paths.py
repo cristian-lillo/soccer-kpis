@@ -15,6 +15,9 @@ DATA_DIR = PROJECT_ROOT / "data"
 # Papers data
 PAPERS_DATA_DIR = DATA_DIR / "papers"
 
+# Papplardo's Wyscout data (soccer-kpis/data/pappalardo)
+WYSCOUT_PAPPALARDO_DIR = DATA_DIR / "pappalardo"
+
 # StatsBomb (soccer-kpis/data/statsbomb)
 STATSBOMB_DIR = DATA_DIR / "statsbomb"
 STATSBOMB_MATCHES_DIR = STATSBOMB_DIR / "matches"
@@ -60,6 +63,7 @@ def setup_project_directories():
     required_directories = [
         DATA_DIR,
         PAPERS_DATA_DIR,
+        WYSCOUT_PAPPALARDO_DIR,
         STATSBOMB_DIR,
         STATSBOMB_MATCHES_DIR,
         STATSBOMB_LINEUPS_DIR,
