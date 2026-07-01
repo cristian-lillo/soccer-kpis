@@ -26,6 +26,8 @@ COLUMNS_TO_EXTRACT = [
     "coordinates_x",
     "coordinates_y",
     "time",
+    "is_counter_attack",
+    "is_under_pressure",
 ]
 
 # Data types for each column
@@ -47,6 +49,8 @@ DTYPE_MAPPING = {
     "coordinates_x": "Float64",
     "coordinates_y": "Float64",
     "time": "string",
+    "is_counter_attack": "boolean",
+    "is_under_pressure": "boolean",
 }
 
 warnings.filterwarnings(
