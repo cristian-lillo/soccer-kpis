@@ -23,11 +23,12 @@ COLUMNS_TO_EXTRACT = [
     "set_piece_type",
     "goalkeeper_type",
     "card_type",
+    "replacement_player",
+    "is_counter_attack",
+    "is_under_pressure",
     "coordinates_x",
     "coordinates_y",
     "time",
-    "is_counter_attack",
-    "is_under_pressure",
 ]
 
 # Data types for each column
@@ -46,11 +47,12 @@ DTYPE_MAPPING = {
     "set_piece_type": "category",
     "goalkeeper_type": "category",
     "card_type": "category",
+    "replacement_player": "string",
+    "is_counter_attack": "boolean",
+    "is_under_pressure": "boolean",
     "coordinates_x": "Float64",
     "coordinates_y": "Float64",
     "time": "string",
-    "is_counter_attack": "boolean",
-    "is_under_pressure": "boolean",
 }
 
 warnings.filterwarnings(
