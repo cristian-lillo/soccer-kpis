@@ -11,6 +11,12 @@ from models.opta_points import opta_points_main
 
 # List of models to run
 MODELS = ["ea_sports_ppi", "opta_points"]
+MODEL_DISPLAY_NAMES = {
+    "ea_sports_ppi": "EA Sports PPI",
+    "opta_points": "Opta Points",
+    "playerank": "Playerank",
+    "plus_minus": "Plus-Minus",
+}
 
 
 def calculate_player_performance(models: list[str] = MODELS):
@@ -131,11 +137,11 @@ def compare_models():
                     max_score - min_score
                 )
 
-                plt.plot(standard_df["normalized_score"], label=model.name)
+                plt.plot(standard_df["normalized_score"], label=MODEL_DISPLAY_NAMES[model.name])
 
-        plt.title(f"Normalized Score Distribution - {tournament['display_name']}")
-        plt.xlabel("Rank Position")
-        plt.ylabel("Normalized Score")
+        plt.title(f"Comparación de Puntaje Total en Torneo - {tournament['display_name']}")
+        plt.xlabel("Ránking de Jugadores")
+        plt.ylabel("Puntaje Normalizado")
         plt.legend()
 
         plt.savefig(paths.FIGURES_OUTPUT_DIR / "model_comparison" / f"{tournament['label']}_model_comparison.png")
