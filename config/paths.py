@@ -33,6 +33,7 @@ MODELS_DIR = PROJECT_ROOT / "models"
 EA_SPORTS_PPI_DIR = MODELS_DIR / "ea_sports_ppi"
 OPTA_POINTS_DIR = MODELS_DIR / "opta_points"
 PLAYERANK_DIR = MODELS_DIR / "playerank"
+PLUS_MINUS_DIR = MODELS_DIR / "plus_minus"
 VAEP_DIR = MODELS_DIR / "vaep"
 
 # Define notebooks directory (soccer-kpis/notebooks)
@@ -45,12 +46,14 @@ OUTPUT_DIR = PROJECT_ROOT / "output"
 EA_SPORTS_PPI_OUTPUT_DIR = OUTPUT_DIR / "ea_sports_ppi"
 OPTA_POINTS_OUTPUT_DIR = OUTPUT_DIR / "opta_points"
 PLAYERANK_OUTPUT_DIR = OUTPUT_DIR / "playerank"
+PLUS_MINUS_OUTPUT_DIR = OUTPUT_DIR / "plus_minus"
 VAEP_OUTPUT_DIR = OUTPUT_DIR / "vaep"
 
 MODEL_OUTPUT_DIRECTORIES = [
     EA_SPORTS_PPI_OUTPUT_DIR,
     OPTA_POINTS_OUTPUT_DIR,
     PLAYERANK_OUTPUT_DIR,
+    PLUS_MINUS_OUTPUT_DIR,
     VAEP_OUTPUT_DIR,
 ]
 
@@ -76,12 +79,14 @@ def setup_project_directories():
         EA_SPORTS_PPI_DIR,
         OPTA_POINTS_DIR,
         PLAYERANK_DIR,
+        PLUS_MINUS_DIR,
         VAEP_DIR,
         NOTEBOOKS_DIR,
         OUTPUT_DIR,
         EA_SPORTS_PPI_OUTPUT_DIR,
         OPTA_POINTS_OUTPUT_DIR,
         PLAYERANK_OUTPUT_DIR,
+        PLUS_MINUS_OUTPUT_DIR,
         VAEP_OUTPUT_DIR,
         FIGURES_OUTPUT_DIR,
         SCRIPTS_DIR,
