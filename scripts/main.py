@@ -17,6 +17,12 @@ MODEL_DISPLAY_NAMES = {
     "playerank": "Playerank",
     "plus_minus": "Plus-Minus",
 }
+PERFORMANCE_METRIC = {
+    "index_score": "performance_score",
+    "opta_points": "performance_score",
+    "player_rating": "performance_score",  # Update later to "playerank_rating"
+    "plus_minus_score": "performance_score",
+}
 
 
 def calculate_player_performance(models: list[str] = MODELS):
@@ -46,12 +52,7 @@ def compare_model_score_by_minutes_played():
                 print(f"Comparing model output file: {file}...")
 
                 df = pd.read_csv(file)
-                standard_df = df.rename(
-                    columns={
-                        "index_score": "performance_score",
-                        "opta_points": "performance_score",
-                    }
-                )
+                standard_df = df.rename(columns=PERFORMANCE_METRIC)
 
                 standard_df["performance_score_per_90"] = (
                     standard_df["performance_score"] / standard_df["minutes_played"]
@@ -87,11 +88,12 @@ def compare_model_score_by_appearances():
                 print(f"Comparing model output file: {file}...")
 
                 df = pd.read_csv(file)
-                standard_df = df.rename(
-                    columns={
-                        "index_score": "performance_score",
-                        "opta_points": "performance_score",
-                    }
+                standard_df = df.rename(columns=PERFORMANCE_METRIC)
+
+                min_score = standard_df["performance_score"].min()
+                max_score = standard_df["performance_score"].max()
+                standard_df["normalized_score"] = (standard_df["performance_score"] - min_score) / (
+                    max_score - min_score
                 )
                 min_score = standard_df["performance_score"].min()
                 max_score = standard_df["performance_score"].max()
@@ -124,12 +126,7 @@ def compare_models():
                 print(f"Comparing model output file: {file}...")
 
                 df = pd.read_csv(file)
-                standard_df = df.rename(
-                    columns={
-                        "index_score": "performance_score",
-                        "opta_points": "performance_score",
-                    }
-                )
+                standard_df = df.rename(columns=PERFORMANCE_METRIC)
 
                 min_score = standard_df["performance_score"].min()
                 max_score = standard_df["performance_score"].max()
