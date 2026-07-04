@@ -10,7 +10,7 @@ from models.ea_sports_ppi import ppi_main
 from models.opta_points import opta_points_main
 
 # List of models to run
-MODELS = ["ea_sports_ppi", "opta_points"]
+MODELS = ["ea_sports_ppi", "opta_points", "playerank", "plus_minus"]
 MODEL_DISPLAY_NAMES = {
     "ea_sports_ppi": "EA Sports PPI",
     "opta_points": "Opta Points",
