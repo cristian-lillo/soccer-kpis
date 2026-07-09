@@ -67,11 +67,45 @@ def run_evaluation_models(evaluation_models: dict[str, dict] = EVALUATION_MODELS
     """
     for model in evaluation_models:
         evaluation_models[model]["script"].main()
+
+
+def normalize_performance_scores(
+    df: pd.DataFrame,
+    performance_score_column: str,
+    per_90: bool = False,
+) -> pd.DataFrame:
     """
+    Normalize performance scores in the DataFrame to a 0-1 range.
 
+    Args:
+        df: DataFrame containing player performance scores.
+        performance_score_column: Name of the column containing performance scores.
+        per_90: If True, convert scores to a per-90 rate before normalizing.
 
+    Returns:
+        DataFrame with normalized scores and sorted in descending order.
+    """
+    normalized_df = df.copy()
+    normalized_df = normalized_df.rename(columns={performance_score_column: "performance_score"})
+
+    if per_90:
+        normalized_df["performance_score"] = (
+            normalized_df["performance_score"] / normalized_df["minutes_played"]
+        ) * 90.0
+
+    min_score = normalized_df["performance_score"].min()
+    max_score = normalized_df["performance_score"].max()
+
+    if max_score == min_score:
+        normalized_df["normalized_score"] = 0.0
+    else:
+        normalized_df["normalized_score"] = (normalized_df["performance_score"] - min_score) / (max_score - min_score)
 
 def compare_model_score_by_minutes_played():
+    normalized_df = normalized_df.sort_values(by="normalized_score", ascending=False).reset_index(drop=True)
+    normalized_df["normalized_rank"] = range(1, len(normalized_df) + 1)
+
+    return normalized_df
     """
     Compare model scores by minutes played.
     """
