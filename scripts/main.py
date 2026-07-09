@@ -13,7 +13,9 @@ The evaluation models included are:
 from itertools import combinations
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
+from matplotlib.colors import BoundaryNorm, ListedColormap
 
 from config import paths, tournaments
 from models.ea_sports_ppi import ppi_main
@@ -443,10 +445,83 @@ def save_comparison_tables(
         tournament_dir / f"{tournament_label}_{suffix}_top{top_k}_matrix.csv",
     )
 
+
+def plot_topk_matrix(
+    tournament: dict[str, str | int],
+    topk_matrix: pd.DataFrame,
+    per_90: bool = False,
+    top_k: int = 10,
+) -> None:
+    """
+    Plot the top-k ranking matrix using discrete colors.
+
+    Args:
+        tournament: Dictionary containing tournament information.
+        topk_matrix: DataFrame containing the top-k ranking matrix.
+        per_90: If True, normalize scores to a per-90 rate.
+        top_k: Number of top players to consider for Jaccard similarity and plotting.
+    """
+    tournament_label = str(tournament["label"])
+    tournament_display_name = str(tournament["display_name"])
+    suffix = "per_90" if per_90 else "total"
+
+    colors = [
+        "#1a9850",
+        "#66bd63",
+        "#a6d96a",
+        "#d9ef8b",
+        "#ffffbf",
+        "#fee08b",
+        "#fdae61",
+        "#f46d43",
+        "#d73027",
+        "#a50026",
+        "#ffffff",
+    ]
+    cmap = ListedColormap(colors)
+    norm = BoundaryNorm(np.arange(0.5, TOP10_OUTSIDE_CATEGORY + 1.5, 1), cmap.N)
+
+    plt.figure(figsize=(12, max(6, 0.4 * len(topk_matrix))))
+    ax = plt.gca()
+    im = ax.imshow(topk_matrix.values, aspect="auto", cmap=cmap, norm=norm)
+
+    ax.set_xticks(range(len(topk_matrix.columns)))
+    ax.set_xticklabels(topk_matrix.columns.tolist(), rotation=30, ha="right")
+    ax.set_yticks(range(len(topk_matrix.index)))
+    ax.set_yticklabels(topk_matrix.index.tolist())
+
+    for row_idx in range(topk_matrix.shape[0]):
+        for col_idx in range(topk_matrix.shape[1]):
+            cell_value = topk_matrix.iloc[row_idx, col_idx]
+            if cell_value <= top_k:
+                text_color = "white" if cell_value <= 2 or cell_value >= 8 else "black"
+                ax.text(
+                    col_idx,
+                    row_idx,
+                    str(cell_value),
+                    ha="center",
+                    va="center",
+                    fontsize=8,
+                    color=text_color,
+                    fontweight="bold",
                 )
 
+    cbar = plt.colorbar(im, ax=ax)
+    tick_positions = list(range(1, top_k + 1)) + [TOP10_OUTSIDE_CATEGORY]
+    tick_labels = [str(i) for i in range(1, top_k + 1)] + [f"Fuera del Top {top_k}"]
+    cbar.set_ticks(tick_positions)
+    cbar.set_ticklabels(tick_labels)
+    cbar.set_label("Ranking")
+    cbar.ax.invert_yaxis()
 
+    title_suffix = " por 90 Minutes" if per_90 else ""
+    plt.title(f"Top {top_k} por modelo - {tournament_display_name}{title_suffix}")
+    plt.tight_layout()
 
+    plot_dir = paths.FIGURES_OUTPUT_DIR / f"comparison_tables_{suffix}"
+    plot_dir.mkdir(parents=True, exist_ok=True)
+    plt.savefig(plot_dir / f"{tournament_label}_top{top_k}_{suffix}.pdf")
+    plt.close()
 
 
 def main():
