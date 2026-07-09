@@ -106,28 +106,48 @@ def compare_model_score_by_minutes_played():
     normalized_df["normalized_rank"] = range(1, len(normalized_df) + 1)
 
     return normalized_df
+
+
+def generate_plots_for_score_per_match(selected_tournaments: list[dict] = tournaments.ALL_TOURNAMENTS):
     """
     Compare model scores by minutes played.
+    Compare model scores by player appearances, one figure per model and tournament.
     """
     for tournament in tournaments.ALL_TOURNAMENTS:
         print(f"Comparing model scores by minutes played for {tournament['label']}...")
+    plot_label = "score_per_match"
+    output_dir = paths.FIGURES_OUTPUT_DIR / plot_label
+    output_dir.mkdir(parents=True, exist_ok=True)
 
         for model in paths.MODEL_OUTPUT_DIRECTORIES:
             for file in model.glob(f"{tournament['label']}_*.csv"):
                 print(f"Comparing model output file: {file}...")
+    for tournament in selected_tournaments:
+        tournament_label = tournament["label"]
+        tournament_display_name = tournament["display_name"]
 
                 df = pd.read_csv(file)
                 standard_df = df.rename(columns=PERFORMANCE_METRIC)
+        for model in EVALUATION_MODELS_INFO:
+            model_info = EVALUATION_MODELS_INFO[model]
+            model_output_directory = model_info["output_directory"]
+            performance_score_column = model_info["performance_score"]
+            model_display_name = model_info["display_name"]
+            model_plot_color = model_info["plot_color"]
 
                 standard_df["performance_score_per_90"] = (
                     standard_df["performance_score"] / standard_df["minutes_played"]
                 ) * 90.0
+            for file in model_output_directory.glob(f"{tournament_label}_*.csv"):
+                print(f"[{plot_label}] {tournament_label} | {model_display_name}")
 
                 min_score = standard_df["performance_score_per_90"].min()
                 max_score = standard_df["performance_score_per_90"].max()
                 standard_df["normalized_score_per_90"] = (standard_df["performance_score_per_90"] - min_score) / (
                     max_score - min_score
                 )
+                df = pd.read_csv(file)
+                normalized_df = normalize_performance_scores(df, performance_score_column)
 
                 plt.figure(figsize=(10, 6))
                 plt.plot(standard_df["normalized_score_per_90"])
@@ -138,43 +158,31 @@ def compare_model_score_by_minutes_played():
                     paths.FIGURES_OUTPUT_DIR
                     / "score_vs_minutes_played"
                     / f"{tournament['label']}_{model.name}_score_vs_minutes_played.png"
+                plt.scatter(
+                    normalized_df["matches_played"],
+                    normalized_df["normalized_score"],
+                    s=18,
+                    alpha=0.75,
+                    color=model_plot_color,
                 )
+                plt.title(f"Puntaje por Partidos Jugados - {tournament_display_name} - {model_display_name}")
+                plt.xlabel("Cantidad de Partidos Jugados")
+                plt.ylabel("Puntaje Normalizado")
+                plt.grid(alpha=0.25)
+                plt.tight_layout()
+
+                plt.savefig(output_dir / f"{tournament_label}_{model}_{plot_label}.pdf")
+                plt.close()
 
 
-def compare_model_score_by_appearances():
     """
-    Compare model scores by player appearances.
     """
-    for tournament in tournaments.ALL_TOURNAMENTS:
-        print(f"Comparing model scores by appearances for {tournament['label']}...")
 
-        for model in paths.MODEL_OUTPUT_DIRECTORIES:
-            for file in model.glob(f"{tournament['label']}_*.csv"):
-                print(f"Comparing model output file: {file}...")
 
-                df = pd.read_csv(file)
-                standard_df = df.rename(columns=PERFORMANCE_METRIC)
 
-                min_score = standard_df["performance_score"].min()
-                max_score = standard_df["performance_score"].max()
-                standard_df["normalized_score"] = (standard_df["performance_score"] - min_score) / (
-                    max_score - min_score
-                )
-                min_score = standard_df["performance_score"].min()
-                max_score = standard_df["performance_score"].max()
-                standard_df["normalized_score"] = (standard_df["performance_score"] - min_score) / (
-                    max_score - min_score
                 )
 
                 plt.figure(figsize=(10, 6))
-                plt.scatter(standard_df["matches_played"], standard_df["normalized_score"])
-                plt.title(f"Normalized Score vs Appearances - {tournament['display_name']}")
-                plt.xlabel("Appearances")
-                plt.ylabel("Normalized Score")
-                plt.savefig(
-                    paths.FIGURES_OUTPUT_DIR
-                    / "score_vs_appearances"
-                    / f"{tournament['label']}_{model.name}_score_vs_appearances.png"
                 )
 
 
