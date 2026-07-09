@@ -1,5 +1,13 @@
 """
-Main script to run all player performance evaluation modules.
+Main script to run evaluation models and compare their outputs.
+
+This script orchestrates the execution of different player performance evaluation models, normalizes their scores, and generates comparison tables and plots for analysis.
+
+The evaluation models included are:
+- EA Sports PPI
+- Opta Points
+- PlayeRank
+- Plus-Minus
 """
 
 import matplotlib.pyplot as plt
@@ -8,36 +16,59 @@ import pandas as pd
 from config import paths, tournaments
 from models.ea_sports_ppi import ppi_main
 from models.opta_points import opta_points_main
+from models.playerank import playerank_main
+from models.plus_minus import plus_minus_main
 
-# List of models to run
-MODELS = ["ea_sports_ppi", "opta_points", "playerank", "plus_minus"]
-MODEL_DISPLAY_NAMES = {
-    "ea_sports_ppi": "EA Sports PPI",
-    "opta_points": "Opta Points",
-    "playerank": "Playerank",
-    "plus_minus": "Plus-Minus",
+EVALUATION_MODELS_INFO = {
+    "ea_sports_ppi": {
+        "display_name": "EA Sports PPI",
+        "performance_score": "index_score",
+        "script": ppi_main,
+        "output_directory": paths.EA_SPORTS_PPI_OUTPUT_DIR,
+        "plot_color": "tab:blue",
+    },
+    "opta_points": {
+        "display_name": "Opta Points",
+        "performance_score": "opta_points",
+        "script": opta_points_main,
+        "output_directory": paths.OPTA_POINTS_OUTPUT_DIR,
+        "plot_color": "tab:orange",
+    },
+    "playerank": {
+        "display_name": "PlayeRank",
+        "performance_score": "playerank_rating",
+        "script": playerank_main,
+        "output_directory": paths.PLAYERANK_OUTPUT_DIR,
+        "plot_color": "tab:green",
+    },
+    "plus_minus": {
+        "display_name": "Plus-Minus",
+        "performance_score": "plus_minus_score",
+        "script": plus_minus_main,
+        "output_directory": paths.PLUS_MINUS_OUTPUT_DIR,
+        "plot_color": "tab:red",
+    },
+    # "vaep": {
+    #     "display_name": "VAEP",
+    #     "performance_score": "vaep_score",
+    #     "script": None,  # Placeholder for VAEP script
+    #     "output_directory": paths.VAEP_OUTPUT_DIR,
+    #     "plot_color": "tab:purple",
+    # },
 }
-PERFORMANCE_METRIC = {
-    "index_score": "performance_score",
-    "opta_points": "performance_score",
-    "player_rating": "performance_score",  # Update later to "playerank_rating"
-    "plus_minus_score": "performance_score",
-}
 
 
-def calculate_player_performance(models: list[str] = MODELS):
+def run_evaluation_models(evaluation_models: dict[str, dict] = EVALUATION_MODELS_INFO):
     """
     Calculate player performance using different models.
 
     Args:
-        models : List of model names to run.
+        evaluation_models : Dictionary of model names and their information to run.
     """
-    for model in models:
-        if model == "ea_sports_ppi":
-            ppi_main.main()
+    for model in evaluation_models:
+        evaluation_models[model]["script"].main()
+    """
 
-        elif model == "opta_points":
-            opta_points_main.main()
 
 
 def compare_model_score_by_minutes_played():
