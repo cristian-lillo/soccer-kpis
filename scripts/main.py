@@ -525,11 +525,23 @@ def plot_topk_matrix(
 
 
 def main():
-    # calculate_player_performance(MODELS)
+    """Main function to execute the evaluation models and compare their outputs."""
 
-    compare_models()
-    compare_model_score_by_appearances()
-    compare_model_score_by_minutes_played()
+    run_models_flag = False
+    if run_models_flag:
+        run_evaluation_models(EVALUATION_MODELS_INFO)
+
+    compare_models_flag = True
+    if compare_models_flag:
+        selected_tournaments = tournaments.ALL_TOURNAMENTS
+
+        generate_plots_for_score_per_match(selected_tournaments)
+
+        generate_plots_for_model_scores(selected_tournaments, per_90=False)
+        generate_plots_for_model_scores(selected_tournaments, per_90=True)
+
+        generate_comparison_tables(selected_tournaments, per_90=False, top_k=10, save_plots=True)
+        generate_comparison_tables(selected_tournaments, per_90=True, top_k=10, save_plots=True)
 
 
 if __name__ == "__main__":
