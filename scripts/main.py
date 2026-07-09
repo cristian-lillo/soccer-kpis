@@ -10,6 +10,8 @@ The evaluation models included are:
 - Plus-Minus
 """
 
+from itertools import combinations
+
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -56,6 +58,15 @@ EVALUATION_MODELS_INFO = {
     #     "plot_color": "tab:purple",
     # },
 }
+
+TOP10_OUTSIDE_CATEGORY = 11
+
+
+def get_min_minutes_threshold(tournament: dict[str, str | int]) -> int:
+    if tournament in tournaments.NATIONAL_TEAM_TOURNAMENTS:
+        return 90 * 2  # Minimum 2 matches for national team tournaments
+    else:
+        return 90 * 5  # Minimum 5 matches for club leagues
 
 
 def run_evaluation_models(evaluation_models: dict[str, dict] = EVALUATION_MODELS_INFO):
@@ -228,10 +239,209 @@ def generate_plots_for_model_scores(
         suffix = "per_90" if per_90 else "total"
         combined_figure.savefig(output_dir / f"{tournament_label}_{suffix}.pdf")
         plt.close(combined_figure)
-    """
-    """
 
 
+def generate_comparison_tables(
+    selected_tournaments: list[dict[str, str | int]] = tournaments.ALL_TOURNAMENTS,
+    per_90: bool = False,
+    top_k: int = 10,
+    save_plots: bool = True,
+) -> None:
+    """
+    Orchestrate comparison table generation, saving and plotting.
+
+    Args:
+        selected_tournaments: List of tournaments to process.
+        per_90: If True, normalize scores to a per-90 rate.
+        top_k: Number of top players to consider for Jaccard similarity and plotting.
+        save_plots: If True, generate and save plots for the top-k ranking matrix.
+    """
+
+    for tournament in selected_tournaments:
+        tables = build_comparison_tables_for_tournament(
+            tournament=tournament,
+            per_90=per_90,
+            top_k=top_k,
+        )
+
+        if tables["merged_table"].empty:
+            continue
+
+        save_comparison_tables(
+            tournament=tournament,
+            tables=tables,
+            per_90=per_90,
+            top_k=top_k,
+        )
+
+        if save_plots:
+            plot_topk_matrix(
+                tournament=tournament,
+                topk_matrix=tables["topk_matrix"],
+                per_90=per_90,
+                top_k=top_k,
+            )
+
+
+def build_comparison_tables_for_tournament(
+    tournament: dict[str, str | int],
+    per_90: bool = False,
+    top_k: int = 10,
+) -> dict[str, pd.DataFrame]:
+    """
+    Build all comparison tables for one tournament.
+
+    Args:
+        tournament: Dictionary containing tournament information.
+        per_90: If True, normalize scores to a per-90 rate.
+        top_k: Number of top players to consider for Jaccard similarity and plotting.
+
+    Returns:
+        Dictionary containing merged table, Pearson correlation, Spearman correlation,
+        Jaccard similarity, and top-k ranking matrix.
+    """
+    function_label = "comparison_tables"
+    tournament_label = str(tournament["label"])
+    min_minutes = get_min_minutes_threshold(tournament)
+
+    model_tables: list[pd.DataFrame] = []
+    topk_rows: list[pd.DataFrame] = []
+
+    for model in EVALUATION_MODELS_INFO:
+        model_info = EVALUATION_MODELS_INFO[model]
+        model_output_directory = model_info["output_directory"]
+        performance_score_column = model_info["performance_score"]
+        model_display_name = model_info["display_name"]
+
+        for file in model_output_directory.glob(f"{tournament_label}_*.csv"):
+            print(f"[{function_label}] {tournament_label} | {model_display_name}")
+
+            df = pd.read_csv(file)
+            df = df[df["minutes_played"] >= min_minutes].copy()
+
+            normalized_df = normalize_performance_scores(
+                df,
+                performance_score_column,
+                per_90=per_90,
+            )
+
+            table = normalized_df[["player", "performance_score", "normalized_score", "normalized_rank"]].copy()
+            table = table.rename(
+                columns={
+                    "performance_score": f"{model}_score",
+                    "normalized_score": f"{model}_normalized_score",
+                    "normalized_rank": f"{model}_normalized_rank",
+                }
+            )
+            model_tables.append(table)
+
+            topk_df = normalized_df.head(top_k)[["player", "normalized_rank"]].copy()
+            topk_df["model"] = model_display_name
+            topk_rows.append(topk_df)
+
+    if not model_tables:
+        return {
+            "merged_table": pd.DataFrame(),
+            "pearson_df": pd.DataFrame(),
+            "spearman_df": pd.DataFrame(),
+            "jaccard_df": pd.DataFrame(),
+            "topk_matrix": pd.DataFrame(),
+        }
+
+    merged_table = model_tables[0]
+    for table in model_tables[1:]:
+        merged_table = merged_table.merge(table, on="player", how="outer")
+
+    norm_cols = [col for col in merged_table.columns if col.endswith("_normalized_score")]
+    rank_cols = [col for col in merged_table.columns if col.endswith("_normalized_rank")]
+
+    pearson_df = merged_table[norm_cols].corr(method="pearson")
+    spearman_df = merged_table[rank_cols].corr(method="spearman")
+
+    jaccard_rows = []
+    for c1, c2 in combinations(rank_cols, 2):
+        model_1 = c1.replace("_normalized_rank", "")
+        model_2 = c2.replace("_normalized_rank", "")
+
+        top1 = set(merged_table.nsmallest(top_k, c1)["player"].dropna())
+        top2 = set(merged_table.nsmallest(top_k, c2)["player"].dropna())
+
+        union = top1 | top2
+        intersection = top1 & top2
+        jaccard_score = len(intersection) / len(union) if union else 0.0
+
+        jaccard_rows.append(
+            {
+                "model_1": model_1,
+                "model_2": model_2,
+                "jaccard_top_k": jaccard_score,
+            }
+        )
+
+    jaccard_df = pd.DataFrame(jaccard_rows)
+
+    topk_df = pd.concat(topk_rows, ignore_index=True)
+    topk_matrix = topk_df.pivot_table(
+        index="player",
+        columns="model",
+        values="normalized_rank",
+        aggfunc="min",
+    )
+
+    topk_matrix = topk_matrix.fillna(TOP10_OUTSIDE_CATEGORY).astype(int)
+    row_order = topk_matrix.sum(axis=1).sort_values().index
+    topk_matrix = topk_matrix.loc[row_order]
+
+    return {
+        "merged_table": merged_table,
+        "pearson_df": pearson_df,
+        "spearman_df": spearman_df,
+        "jaccard_df": jaccard_df,
+        "topk_matrix": topk_matrix,
+    }
+
+
+def save_comparison_tables(
+    tournament: dict[str, str | int],
+    tables: dict[str, pd.DataFrame],
+    per_90: bool = False,
+    top_k: int = 10,
+) -> None:
+    """
+    Save comparison tables to CSV.
+
+    Args:
+        tournament: Dictionary containing tournament information.
+        tables: Dictionary containing comparison tables.
+        per_90: If True, normalize scores to a per-90 rate.
+        top_k: Number of top players to consider for Jaccard similarity and plotting.
+    """
+    tournament_label = str(tournament["label"])
+    suffix = "per_90" if per_90 else "total"
+
+    comparison_root_dir = paths.OUTPUT_DIR / "comparisons"
+    comparison_root_dir.mkdir(parents=True, exist_ok=True)
+
+    tournament_dir = comparison_root_dir / tournament_label
+    tournament_dir.mkdir(parents=True, exist_ok=True)
+
+    tables["merged_table"].to_csv(
+        tournament_dir / f"{tournament_label}_{suffix}_model_table.csv",
+        index=False,
+    )
+    tables["pearson_df"].to_csv(
+        tournament_dir / f"{tournament_label}_{suffix}_pearson.csv",
+    )
+    tables["spearman_df"].to_csv(
+        tournament_dir / f"{tournament_label}_{suffix}_spearman.csv",
+    )
+    tables["jaccard_df"].to_csv(
+        tournament_dir / f"{tournament_label}_{suffix}_jaccard.csv",
+        index=False,
+    )
+    tables["topk_matrix"].to_csv(
+        tournament_dir / f"{tournament_label}_{suffix}_top{top_k}_matrix.csv",
+    )
 
                 )
 
