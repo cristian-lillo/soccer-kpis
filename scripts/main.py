@@ -257,6 +257,7 @@ def generate_comparison_tables(
     per_90: bool = False,
     top_k: int = 10,
     save_plots: bool = True,
+    format: str = "pdf",
 ) -> None:
     """
     Orchestrate comparison table generation, saving and plotting.
@@ -266,6 +267,7 @@ def generate_comparison_tables(
         per_90: If True, normalize scores to a per-90 rate.
         top_k: Number of top players to consider for Jaccard similarity and plotting.
         save_plots: If True, generate and save plots for the top-k ranking matrix.
+        format: The format in which to save the charts (default is "pdf").
     """
 
     for tournament in selected_tournaments:
@@ -291,6 +293,7 @@ def generate_comparison_tables(
                 topk_matrix=tables["topk_matrix"],
                 per_90=per_90,
                 top_k=top_k,
+                format=format,
             )
 
 
@@ -460,6 +463,7 @@ def plot_topk_matrix(
     topk_matrix: pd.DataFrame,
     per_90: bool = False,
     top_k: int = 10,
+    format: str = "pdf",
 ) -> None:
     """
     Plot the top-k ranking matrix using discrete colors.
@@ -469,6 +473,7 @@ def plot_topk_matrix(
         topk_matrix: DataFrame containing the top-k ranking matrix.
         per_90: If True, normalize scores to a per-90 rate.
         top_k: Number of top players to consider for Jaccard similarity and plotting.
+        format: The format in which to save the charts (default is "pdf").
     """
     tournament_label = str(tournament["label"])
     tournament_display_name = str(tournament["display_name"])
@@ -527,9 +532,9 @@ def plot_topk_matrix(
     plt.title(f"Top {top_k} por modelo - {tournament_display_name}{title_suffix}")
     plt.tight_layout()
 
-    plot_dir = paths.FIGURES_OUTPUT_DIR / f"comparison_tables_{suffix}"
+    plot_dir = paths.FIGURES_OUTPUT_DIR / f"comparison_tables_{suffix}" / format
     plot_dir.mkdir(parents=True, exist_ok=True)
-    plt.savefig(plot_dir / f"{tournament_label}_top{top_k}_{suffix}.pdf")
+    plt.savefig(plot_dir / f"{tournament_label}_top{top_k}_{suffix}.{format}")
     plt.close()
 
 
