@@ -549,13 +549,14 @@ def main():
     if compare_models_flag:
         selected_tournaments = tournaments.ALL_TOURNAMENTS
 
-        generate_plots_for_score_per_match(selected_tournaments)
+        for format in ["pdf", "png"]:
+            generate_plots_for_score_per_match(selected_tournaments)
 
-        generate_plots_for_model_scores(selected_tournaments, per_90=False)
-        generate_plots_for_model_scores(selected_tournaments, per_90=True)
+            generate_plots_for_model_scores(selected_tournaments, per_90=False, format=format)
+            generate_plots_for_model_scores(selected_tournaments, per_90=True, format=format)
 
-        generate_comparison_tables(selected_tournaments, per_90=False, top_k=10, save_plots=True)
-        generate_comparison_tables(selected_tournaments, per_90=True, top_k=10, save_plots=True)
+            generate_comparison_tables(selected_tournaments, per_90=False, top_k=10, save_plots=True, format=format)
+            generate_comparison_tables(selected_tournaments, per_90=True, top_k=10, save_plots=True, format=format)
 
 
 if __name__ == "__main__":
