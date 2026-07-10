@@ -120,12 +120,19 @@ def normalize_performance_scores(
     return normalized_df
 
 
-def generate_plots_for_score_per_match(selected_tournaments: list[dict] = tournaments.ALL_TOURNAMENTS):
+def generate_plots_for_score_per_match(
+    selected_tournaments: list[dict] = tournaments.ALL_TOURNAMENTS,
+    format: str = "pdf",
+) -> None:
     """
     Compare model scores by player appearances, one figure per model and tournament.
+
+    Args:
+        selected_tournaments: List of tournaments to process.
+        format: The format in which to save the charts (default is "pdf").
     """
     plot_label = "score_per_match"
-    output_dir = paths.FIGURES_OUTPUT_DIR / plot_label
+    output_dir = paths.FIGURES_OUTPUT_DIR / plot_label / format
     output_dir.mkdir(parents=True, exist_ok=True)
 
     for tournament in selected_tournaments:
@@ -159,7 +166,7 @@ def generate_plots_for_score_per_match(selected_tournaments: list[dict] = tourna
                 plt.grid(alpha=0.25)
                 plt.tight_layout()
 
-                plt.savefig(output_dir / f"{tournament_label}_{model}_{plot_label}.pdf")
+                plt.savefig(output_dir / f"{tournament_label}_{model}_{plot_label}.{format}")
                 plt.close()
 
 
