@@ -3,14 +3,6 @@ import pandas as pd
 
 from config import paths
 
-# ==================================
-# 1. PAPERS DATA
-# ==================================
-
-# Create the DataFrame
-papers_df = pd.read_json(paths.PAPERS_DATA_DIR / "papers_data.json", orient="index")
-papers_df.columns = ["year", "data_type", "competitions", "seasons", "variables", "model_type"]
-
 # ==========================================
 # 3. CHART GENERATION
 # ==========================================
@@ -121,3 +113,18 @@ def setup_plotting_style() -> list[str]:
     colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"]
 
     return colors
+
+
+def load_papers_data(filename: str = "papers_data.json") -> pd.DataFrame:
+    """
+    Load the papers data from the JSON file and return a DataFrame.
+
+    Args:
+        filename: The name of the JSON file containing the papers data.
+
+    Returns:
+        A pandas DataFrame containing the papers data.
+    """
+    papers_df = pd.read_json(paths.PAPERS_DATA_DIR / filename, orient="index")
+    papers_df.columns = ["year", "data_type", "competitions", "seasons", "variables", "model_type"]
+    return papers_df
