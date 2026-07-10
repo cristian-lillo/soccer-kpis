@@ -173,6 +173,7 @@ def generate_plots_for_score_per_match(
 def generate_plots_for_model_scores(
     selected_tournaments: list[dict] = tournaments.ALL_TOURNAMENTS,
     per_90: bool = False,
+    format: str = "pdf",
 ) -> None:
     """
     Generate one plot per model and an additional combined plot per tournament.
@@ -180,9 +181,10 @@ def generate_plots_for_model_scores(
     Args:
         selected_tournaments: List of tournaments to process.
         per_90: If True, normalize scores to a per-90 rate.
+        format: The format in which to save the charts (default is "pdf").
     """
     plot_label = "score_per_90" if per_90 else "total_score"
-    output_dir = paths.FIGURES_OUTPUT_DIR / plot_label
+    output_dir = paths.FIGURES_OUTPUT_DIR / plot_label / format
     output_dir.mkdir(parents=True, exist_ok=True)
 
     for tournament in selected_tournaments:
@@ -225,7 +227,7 @@ def generate_plots_for_model_scores(
                 plt.tight_layout()
 
                 suffix = "per_90" if per_90 else "total"
-                plt.savefig(output_dir / f"{tournament_label}_{model}_{suffix}.pdf")
+                plt.savefig(output_dir / f"{tournament_label}_{model}_{suffix}.{format}")
                 plt.close()
 
                 combined_ax.plot(
@@ -246,7 +248,7 @@ def generate_plots_for_model_scores(
         combined_figure.tight_layout()
 
         suffix = "per_90" if per_90 else "total"
-        combined_figure.savefig(output_dir / f"{tournament_label}_{suffix}.pdf")
+        combined_figure.savefig(output_dir / f"{tournament_label}_{suffix}.{format}")
         plt.close(combined_figure)
 
 
