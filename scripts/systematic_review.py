@@ -12,23 +12,6 @@ papers_df = pd.read_json(paths.PAPERS_DATA_DIR / "papers_data.json", orient="ind
 papers_df.columns = ["year", "data_type", "competitions", "seasons", "variables", "model_type"]
 
 # ==========================================
-# 2. ACADEMIC STYLE CONFIGURATION
-# ==========================================
-plt.rcParams.update(
-    {
-        "font.family": "serif",
-        "font.size": 10,
-        "axes.labelsize": 12,
-        "axes.titlesize": 14,
-        "axes.spines.top": False,
-        "axes.spines.right": False,
-        "figure.autolayout": True,
-    }
-)
-
-colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"]
-
-# ==========================================
 # 3. CHART GENERATION
 # ==========================================
 
@@ -115,3 +98,26 @@ plt.savefig(f"{plots_folder}/papers_temporadas.pdf", bbox_inches="tight")
 plt.close()
 
 print("Process completed! The 6 charts have been saved.")
+
+def setup_plotting_style() -> list[str]:
+    """
+    Set up the plotting style for the charts.
+
+    Returns:
+        A list of colors to be used in the plots.
+    """
+    plt.rcParams.update(
+        {
+            "font.family": "serif",
+            "font.size": 10,
+            "axes.labelsize": 12,
+            "axes.titlesize": 14,
+            "axes.spines.top": False,
+            "axes.spines.right": False,
+            "figure.autolayout": True,
+        }
+    )
+
+    colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"]
+
+    return colors
