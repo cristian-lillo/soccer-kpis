@@ -159,3 +159,16 @@ def generate_charts(papers_df: pd.DataFrame, colors: list[str], format: str = "p
     plt.close()
 
     print("Process completed! The 6 charts have been saved.")
+
+
+def main():
+    colors = setup_plotting_style()
+
+    papers_df = load_papers_data()
+
+    generate_charts(papers_df, colors, format="pdf")
+    generate_charts(papers_df, colors, format="png")
+
+
+if __name__ == "__main__":
+    main()
