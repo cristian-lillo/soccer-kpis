@@ -550,7 +550,7 @@ def main():
         selected_tournaments = tournaments.ALL_TOURNAMENTS
 
         for format in ["pdf", "png"]:
-            generate_plots_for_score_per_match(selected_tournaments)
+            generate_plots_for_score_per_match(selected_tournaments, format=format)
 
             generate_plots_for_model_scores(selected_tournaments, per_90=False, format=format)
             generate_plots_for_model_scores(selected_tournaments, per_90=True, format=format)
