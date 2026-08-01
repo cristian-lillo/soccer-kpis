@@ -60,12 +60,12 @@ def generate_charts(papers_df: pd.DataFrame, colors: list[str], format: str = "p
     # Chart 1: Temporal Evolution (Bar Chart)
     plt.figure(figsize=(7, 4))
 
-    year_counts = papers_df["year"].value_counts().sort_index()
+    year_counts = papers_df["publication_year"].value_counts().sort_index()
 
     plt.bar(year_counts.index, year_counts.explode(), color=colors[0], width=0.6, zorder=3)
     plt.grid(axis="y", linestyle="--", alpha=0.7, zorder=0)
     plt.xticks(year_counts.index)
-    plt.yticks(range(0, int(year_counts.max()) + 2))
+    plt.yticks(range(int(year_counts.max()) + 2))
 
     if format == "png":
         plt.title("Año de Publicación de los Estudios")
@@ -86,11 +86,11 @@ def generate_charts(papers_df: pd.DataFrame, colors: list[str], format: str = "p
     plt.pie(
         data_type_counts.values,
         labels=data_type_counts.index,
-        autopct=lambda x: "%d" % round(x * total_data_types),
+        autopct=lambda x: f"{round(x * total_data_types)}",
         pctdistance=0.8,
         startangle=140,
         colors=colors,
-        wedgeprops=dict(width=0.4, edgecolor="w"),
+        wedgeprops={"width": 0.4, "edgecolor": "w"},
     )
 
     if format == "png":
@@ -126,7 +126,7 @@ def generate_charts(papers_df: pd.DataFrame, colors: list[str], format: str = "p
 
     plt.bar(model_type_counts.index, model_type_counts.values, color=colors[1], width=0.5, zorder=3)
     plt.grid(axis="y", linestyle="--", alpha=0.7, zorder=0)
-    plt.yticks(range(0, int(model_type_counts.max()) + 2))
+    plt.yticks(range(int(model_type_counts.max()) + 2))
 
     if format == "png":
         plt.title("Tipos de Modelos Utilizados en los Estudios")
@@ -143,7 +143,8 @@ def generate_charts(papers_df: pd.DataFrame, colors: list[str], format: str = "p
 
     plt.barh(variables_counts.index, variables_counts.values, color=colors[4], zorder=3)
     plt.grid(axis="x", linestyle="--", alpha=0.7, zorder=0)
-    plt.xticks(range(0, int(variables_counts.max()) + 2))
+    plt.xticks(range(int(variables_counts.max()) + 2))
+
     if format == "png":
         plt.title("Variables Consideradas en los Estudios")
     plt.xlabel("Cantidad de Estudios")
@@ -162,7 +163,8 @@ def generate_charts(papers_df: pd.DataFrame, colors: list[str], format: str = "p
 
     plt.barh(seasons_counts.index, seasons_counts.values, color=colors[3], zorder=3)
     plt.grid(axis="x", linestyle="--", alpha=0.7, zorder=0)
-    plt.xticks(range(0, int(seasons_counts.max()) + 2))
+    plt.xticks(range(int(seasons_counts.max()) + 2))
+
     if format == "png":
         plt.title("Temporadas y Ediciones Analizadas en los Estudios")
     plt.xlabel("Cantidad de Estudios")
