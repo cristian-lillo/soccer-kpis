@@ -349,7 +349,7 @@ def calculate_opta_points_for_players(player_metrics: dict) -> pd.DataFrame:
     opta_points_list = []
 
     for player, metrics in player_metrics.items():
-        player_points = 0
+        player_points = 5.5
 
         # Multiply each metric by its corresponding point value
         for metric, value in metrics.items():
