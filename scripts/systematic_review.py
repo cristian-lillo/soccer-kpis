@@ -67,6 +67,8 @@ def generate_charts(papers_df: pd.DataFrame, colors: list[str], format: str = "p
     plt.xticks(year_counts.index)
     plt.yticks(range(0, int(year_counts.max()) + 2))
 
+    if format == "png":
+        plt.title("Año de Publicación de los Estudios")
     plt.xlabel("Año de Publicación")
     plt.ylabel("Cantidad de Artículos")
 
@@ -91,6 +93,9 @@ def generate_charts(papers_df: pd.DataFrame, colors: list[str], format: str = "p
         wedgeprops=dict(width=0.4, edgecolor="w"),
     )
 
+    if format == "png":
+        plt.title("Tipos de Datos Utilizados en los Estudios")
+
     chart2_filepath = format_folder / f"papers_tipo_de_datos.{format}"
     plt.savefig(chart2_filepath, bbox_inches="tight")
     plt.close()
@@ -105,6 +110,8 @@ def generate_charts(papers_df: pd.DataFrame, colors: list[str], format: str = "p
     plt.grid(axis="x", linestyle="--", alpha=0.7, zorder=0)
     plt.xticks(range(0, int(competition_counts.max()) + 2))
     plt.xlabel("Frecuencia de Uso en Modelos")
+    if format == "png":
+        plt.title("Competiciones Analizadas en los Estudios")
 
     chart3_filepath = format_folder / f"papers_competiciones.{format}"
     plt.savefig(chart3_filepath, bbox_inches="tight")
@@ -121,6 +128,8 @@ def generate_charts(papers_df: pd.DataFrame, colors: list[str], format: str = "p
     plt.yticks(range(0, int(model_type_counts.max()) + 2))
 
     plt.ylabel("Cantidad de Artículos")
+    if format == "png":
+        plt.title("Tipos de Modelos Utilizados en los Estudios")
 
     chart4_filepath = format_folder / f"papers_tipo_de_modelos.{format}"
     plt.savefig(chart4_filepath, bbox_inches="tight")
@@ -135,6 +144,8 @@ def generate_charts(papers_df: pd.DataFrame, colors: list[str], format: str = "p
     plt.grid(axis="x", linestyle="--", alpha=0.7, zorder=0)
     plt.xticks(range(0, int(variables_counts.max()) + 2))
     plt.xlabel("Frecuencia de Uso en Modelos")
+    if format == "png":
+        plt.title("Variables Consideradas en los Estudios")
 
     chart5_filepath = format_folder / f"papers_variables.{format}"
     plt.savefig(chart5_filepath, bbox_inches="tight")
@@ -152,6 +163,8 @@ def generate_charts(papers_df: pd.DataFrame, colors: list[str], format: str = "p
     plt.grid(axis="x", linestyle="--", alpha=0.7, zorder=0)
     plt.xticks(range(0, int(seasons_counts.max()) + 2))
     plt.xlabel("Cantidad de Artículos")
+    if format == "png":
+        plt.title("Temporadas y Ediciones Analizadas en los Estudios")
 
     chart6_filepath = format_folder / f"papers_temporadas.{format}"
     plt.savefig(chart6_filepath, bbox_inches="tight")
