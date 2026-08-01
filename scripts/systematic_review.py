@@ -6,6 +6,20 @@ from config import paths
 PLOTS_FOLDER = paths.FIGURES_OUTPUT_DIR / "systematic_review"
 
 
+def load_papers_data(filename: str = "papers_data.json") -> pd.DataFrame:
+    """
+    Load the papers data from the JSON file and return a DataFrame.
+
+    Args:
+        filename: The name of the JSON file containing the papers data.
+
+    Returns:
+        A pandas DataFrame containing the papers data.
+    """
+    papers_df = pd.read_json(paths.PAPERS_DATA_DIR / filename, orient="records")
+    return papers_df
+
+
 def setup_plotting_style() -> list[str]:
     """
     Set up the plotting style for the charts.
@@ -28,21 +42,6 @@ def setup_plotting_style() -> list[str]:
     colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"]
 
     return colors
-
-
-def load_papers_data(filename: str = "papers_data.json") -> pd.DataFrame:
-    """
-    Load the papers data from the JSON file and return a DataFrame.
-
-    Args:
-        filename: The name of the JSON file containing the papers data.
-
-    Returns:
-        A pandas DataFrame containing the papers data.
-    """
-    papers_df = pd.read_json(paths.PAPERS_DATA_DIR / filename, orient="index")
-    papers_df.columns = ["year", "data_type", "competitions", "seasons", "variables", "model_type"]
-    return papers_df
 
 
 def generate_charts(papers_df: pd.DataFrame, colors: list[str], format: str = "pdf") -> None:
@@ -162,10 +161,9 @@ def generate_charts(papers_df: pd.DataFrame, colors: list[str], format: str = "p
 
 
 def main():
+    papers_df = load_papers_data("papers_data.json")
+
     colors = setup_plotting_style()
-
-    papers_df = load_papers_data()
-
     generate_charts(papers_df, colors, format="pdf")
     generate_charts(papers_df, colors, format="png")
 
