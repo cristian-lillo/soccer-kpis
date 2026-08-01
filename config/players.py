@@ -141,6 +141,37 @@ def load_match_data(match_id: int) -> tuple[EventDataset, pd.DataFrame]:
     return dataset, player_events_df
 
 
+def get_players_position_group(dataset: EventDataset) -> dict[str, str]:
+    """
+    Determine the main position group of all players based on time spent in each position.
+
+    Args:
+        dataset: The event dataset containing player position data.
+
+    Returns:
+        The main position group of each player as a dictionary.
+    """
+    player_positions = {}
+
+    # Iterate through dataset to find player's position history
+    for team in dataset.metadata.teams:
+        for player in team.players:
+            player_position = ("", 0)
+
+            for start_time, end_time, position in player.positions.ranges():
+                position_duration = (end_time - start_time).total_seconds()
+                position_group = position.position_group.name
+
+                # Compare and update the variable if this position has longer duration
+                prev_position, prev_duration = player_position
+                if position_group != prev_position and position_duration > prev_duration:
+                    player_position = (position_group, position_duration)
+
+            player_positions[player.name] = player_position[0]
+
+    return player_positions
+
+
 def count_assists(match_events_df: pd.DataFrame) -> dict[str, int]:
     """
     Count the number of assists made by each player in a match.
