@@ -55,12 +55,28 @@ def get_period_duration(dataset: EventDataset) -> dict[str, int]:
     return {f"{key}": convert_timedelta_to_minutes(duration) for key, duration in durations.items()}
 
 
-def convert_time_str_to_minutes(dataset: EventDataset, time_str: str) -> int:
-    """Convert a time string (e.g., 'P2T34:21') to total minutes, considering the period."""
+def convert_time_str_to_minutes(dataset, time_str: str) -> int:
+    """
+    Convert a time string in the format "P#T##:##" to minutes.
+
+    Parameters:
+    - dataset: The event dataset for the match.
+    - time_str: The time string to convert.
+
+    Returns:
+        The total number of minutes represented by the time string.
+    """
     period_durations = get_period_duration(dataset)
-    previous_period_minutes = period_durations.get(str(int(time_str[1]) - 1), 0)
+
+    current_period = int(time_str[1])
     minutes, seconds = map(int, time_str[3:].split(":"))
-    return previous_period_minutes + minutes + (1 if seconds >= 30 else 0)
+
+    previous_period_minutes = sum(period_durations.get(str(period_id), 0) for period_id in range(1, current_period))
+
+    if current_period == 5:
+        return previous_period_minutes  # Don't add extra minutes for penalty shootouts
+    else:
+        return previous_period_minutes + minutes + (1 if seconds >= 30 else 0)
 
 
 def calculate_segment_duration(dataset: EventDataset, start_time: str, end_time: str) -> int:
@@ -82,6 +98,9 @@ def divide_match_in_segments(dataset: EventDataset, match_events_df: pd.DataFram
     Returns:
         A dictionary where keys are segment identifiers and values are dictionaries containing segment details.
     """
+    home_team: str = dataset.metadata.teams[0].name
+    away_team: str = dataset.metadata.teams[1].name
+
     match_start, match_end = get_match_start_and_end_times(dataset)
     event_times = {match_start, match_end}
     segments = {}
@@ -114,6 +133,24 @@ def divide_match_in_segments(dataset: EventDataset, match_events_df: pd.DataFram
                 & (match_events_df["success"]),
                 ["team", "time"],
             ].to_dict(orient="records"),
+            "home_goals": len(
+                match_events_df.loc[
+                    (match_events_df["time"] >= start_time)
+                    & (match_events_df["time"] < end_time)
+                    & (match_events_df["event_type"] == "SHOT")
+                    & (match_events_df["success"])
+                    & (match_events_df["team"] == home_team)
+                ]
+            ),
+            "away_goals": len(
+                match_events_df.loc[
+                    (match_events_df["time"] >= start_time)
+                    & (match_events_df["time"] < end_time)
+                    & (match_events_df["event_type"] == "SHOT")
+                    & (match_events_df["success"])
+                    & (match_events_df["team"] == away_team)
+                ]
+            ),
         }
 
     return segments
@@ -121,21 +158,24 @@ def divide_match_in_segments(dataset: EventDataset, match_events_df: pd.DataFram
 
 def get_player_start_and_end_times(dataset: EventDataset, player_name: str) -> tuple:
     """
-    Retrieve the start and end times for a player in the match.
+    Determine the start and end times of a player's participation in the match.
 
     Args:
-        dataset (EventDataset): The event dataset for the match.
-        player_name (str): The full name of the player.
+        dataset: The event dataset containing player position data.
+        player_name: The name of the player.
 
     Returns:
-        A tuple containing the start and end times in minutes.
+        A tuple containing the start and end times of the player's participation.
     """
     periods_duration = get_period_duration(dataset)
+
     player_start_time = None
     player_end_time = None
 
+    # Iterate through dataset to find player's position history
     for team in dataset.metadata.teams:
         for player in team.players:
+            # Only get position for the specified player
             if player.full_name == player_name:
                 for start_time, end_time, _ in player.positions.ranges():
                     if player_start_time is None:
@@ -143,66 +183,26 @@ def get_player_start_and_end_times(dataset: EventDataset, player_name: str) -> t
                     if player_end_time is None or end_time > player_end_time:
                         player_end_time = end_time
 
+    # Convert start and end times to minutes, considering previous period durations
     if player_start_time is not None:
+        current_period = int(player_start_time.period.id)
+        previous_periods_minutes = sum(periods_duration.get(str(i), 0) for i in range(1, current_period))
         start_minutes_in_period = convert_timedelta_to_minutes(player_start_time.timestamp)
-        previous_period_minutes = periods_duration.get(str(int(player_start_time.period.id) - 1), 0)
-        player_start_time = start_minutes_in_period + previous_period_minutes
-
+        player_start_time = previous_periods_minutes + start_minutes_in_period
     if player_end_time is not None:
+        current_period = int(player_end_time.period.id)
+        previous_periods_minutes = sum(periods_duration.get(str(i), 0) for i in range(1, current_period))
         end_minutes_in_period = convert_timedelta_to_minutes(player_end_time.timestamp)
-        previous_period_minutes = periods_duration.get(str(int(player_end_time.period.id) - 1), 0)
-        player_end_time = end_minutes_in_period + previous_period_minutes
+        player_end_time = previous_periods_minutes + (end_minutes_in_period if current_period != 5 else 0)
 
     return player_start_time, player_end_time
-
-
-def calculate_segments_weight(dataset: EventDataset, match_segments: dict[str, dict]) -> dict[str, dict]:
-    """
-    Calculate the weight for each match segment based on duration and goal difference.
-
-    Args:
-        dataset (EventDataset): The event dataset for the match.
-        match_segments (dict): A dictionary containing match segments.
-
-    Returns:
-        A dictionary with updated segment weights and goal counts.
-    """
-    home_team = dataset.metadata.teams[0].name
-    goal_difference_start = 0
-
-    for segment_key, segment_info in match_segments.items():
-        segment_duration = segment_info["duration"]
-        goals = segment_info["goals"]
-
-        goal_difference_end = goal_difference_start
-        home_goals = 0
-        away_goals = 0
-
-        for goal in goals:
-            if goal["team"] == home_team:
-                goal_difference_end += 1
-                home_goals += 1
-            else:
-                goal_difference_end -= 1
-                away_goals += 1
-
-        weight_time = 1.0
-        weight_duration = (segment_duration + RHO_2) / RHO_3
-        weight_goals = RHO_4 if abs(goal_difference_start) >= 2 and abs(goal_difference_end) >= 2 else 1
-
-        match_segments[segment_key]["weight"] = weight_time * weight_duration * weight_goals
-        match_segments[segment_key]["home_goals"] = home_goals
-        match_segments[segment_key]["away_goals"] = away_goals
-
-        goal_difference_start = goal_difference_end
-
-    return match_segments
 
 
 def calculate_plus_minus_score(
     dataset: EventDataset,
     match_segments: dict[str, dict],
     player_name: str,
+    team: str,
 ) -> float:
     """
     Calculate the plus-minus score for a player based on match segments.
@@ -211,25 +211,29 @@ def calculate_plus_minus_score(
         dataset (EventDataset): The event dataset for the match.
         match_segments (dict): A dictionary containing match segments.
         player_name (str): The name of the player.
+        team (str): The name of the player's team.
 
     Returns:
         float: The plus-minus score for the player.
     """
+    home_team: str = dataset.metadata.teams[0].name
+
     player_start_time, player_end_time = get_player_start_and_end_times(dataset, player_name)
 
-    if player_start_time is None or player_end_time is None:
-        return 0.0
-
     plus_minus_score = 0.0
+
+    if player_start_time is None or player_end_time is None:
+        return plus_minus_score
 
     for segment_info in match_segments.values():
         segment_start_time = convert_time_str_to_minutes(dataset, segment_info["start_time"])
         segment_end_time = convert_time_str_to_minutes(dataset, segment_info["end_time"])
 
         if segment_start_time < player_end_time and segment_end_time > player_start_time:
-            plus_minus_score += (
-                segment_info["weight"] * (segment_info["home_goals"] + segment_info["away_goals"])
-            ) ** 2
+            if team == home_team:
+                plus_minus_score += segment_info["home_goals"] - segment_info["away_goals"]
+            else:
+                plus_minus_score += segment_info["away_goals"] - segment_info["home_goals"]
 
     return plus_minus_score
 
@@ -242,8 +246,12 @@ def calculate_match_plus_minus_scores(
     plus_minus_df = players_info_df.copy()
 
     for player in players_info_df["player_name"]:
+        team: str = players_info_df.loc[players_info_df["player_name"] == player, "team_name"].values[0]  # type: ignore
         plus_minus_df.loc[plus_minus_df["player_name"] == player, "plus_minus_score"] = calculate_plus_minus_score(
-            dataset, match_segments, player
+            dataset,
+            match_segments,
+            player,
+            team,
         )
 
     plus_minus_df = plus_minus_df.sort_values(by="plus_minus_score", ascending=False).reset_index(drop=True)
@@ -279,9 +287,8 @@ def get_match_plus_minus_scores(match_id: int) -> pd.DataFrame:
     dataset, match_events_df = players.load_match_data(match_id)
 
     match_segments = divide_match_in_segments(dataset, match_events_df)
-    match_segments_data = calculate_segments_weight(dataset, match_segments)
 
-    plus_minus_df = calculate_match_plus_minus_scores(dataset, match_segments_data, players_info_df)
+    plus_minus_df = calculate_match_plus_minus_scores(dataset, match_segments, players_info_df)
 
     return plus_minus_df
 
