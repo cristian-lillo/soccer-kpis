@@ -311,14 +311,14 @@ def get_match_ppi_scores(match_id: int) -> pd.DataFrame:
     """
     # Load players info and team minutes
     players_info_df = players.get_players_info(match_id)
-    team_minutes_dict = players.get_minutes_played_by_team(match_id)
+    team_minutes_dict = players_info_df.groupby("team_name")["minutes_played"].sum().to_dict()  # type: ignore
 
     # Load match data
     dataset, match_events_df = players.load_match_data(match_id)
 
     # Extract metrics
     player_metrics = extract_player_metrics(dataset, match_events_df, players_info_df)
-    team_metrics = extract_team_metrics(match_events_df, team_minutes_dict)
+    team_metrics = extract_team_metrics(match_events_df, team_minutes_dict)  # type: ignore
 
     # Calculate PPI for players
     ppi_df = calculate_players_performance_index(player_metrics, team_metrics)

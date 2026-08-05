@@ -98,23 +98,6 @@ def get_players_info(match_id: int) -> pd.DataFrame:
     return merged_df[["player_name", "nickname", "team_name", "minutes_played"]]
 
 
-def get_minutes_played_by_team(match_id: int) -> dict[str, int]:
-    """
-    Calculate total minutes played by each team in a given match.
-
-    Args:
-        match_id (int): StatsBomb match ID.
-
-    Returns:
-        dict[str, float]: Dictionary mapping team names to total minutes played.
-    """
-    merged_df = _merge_players_and_team_data(match_id)
-
-    team_minutes = merged_df.groupby("team_name")["minutes_played"].sum().to_dict()
-
-    return team_minutes
-
-
 def load_match_data(match_id: int) -> tuple[EventDataset, pd.DataFrame]:
     """
     Load and preprocess match data for a given match ID.
