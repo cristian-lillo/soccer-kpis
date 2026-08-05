@@ -1,8 +1,16 @@
 import warnings
+from enum import Enum
 
 import pandas as pd
 from kloppy import statsbomb
-from kloppy.domain import EventDataset
+from kloppy.domain import (
+    CardType,
+    Event,
+    EventDataset,
+    EventType,
+    Qualifier,
+    ResultType,
+)
 from socceraction.data.statsbomb import StatsBombLoader
 
 from config import paths
@@ -133,40 +141,89 @@ def get_players_position_group(dataset: EventDataset) -> dict[str, str]:
     return player_positions
 
 
-def count_assists(match_events_df: pd.DataFrame) -> dict[str, int]:
+def calculate_metric_for_player_dataset(
+    dataset: EventDataset,
+    type_filter: EventType,
+    result_filter: list[ResultType] | ResultType | None = None,
+    qualifier_filter: list[Enum] | Enum | None = None,
+    card_filter: list[CardType] | CardType | None = None,
+    exclude_qualifier: bool = False,
+) -> int:
     """
-    Count the number of assists made by each player in a match.
+    Count the number of specific events for a player in the dataset.
 
     Args:
-        player_events_df: DataFrame containing events by the player.
-        match_events_df: DataFrame containing all events in the match.
+        dataset: The specific player's event dataset.
+        type_filter: The event type to filter for (e.g., EventType.PASS, EventType.SHOT).
+        result_filter: The result or list of results of the event to filter for (e.g., PassResult.COMPLETE).
+        qualifier_filter: The qualifier or list of qualifiers to count (e.g., PassType.ASSIST).
+        card_filter: The card type or list of card types to filter for (e.g., CardType.FIRST_YELLOW, CardType.RED).
+        exclude_qualifier: If True, counts events that do not have the specified qualifier(s).
 
     Returns:
-        A dictionary mapping player names to their assist counts.
+        The count of the specified event.
     """
-    # Filter match goals and shot assists
-    goals_df = match_events_df.loc[(match_events_df["event_type"] == "SHOT") & (match_events_df["result"] == "GOAL")]
-    shot_assists_df = match_events_df.loc[match_events_df["pass_type"] == "SHOT_ASSIST"]
 
-    # Get indexes of DataFrames
-    event_indexes = match_events_df.index.to_list()
-    goal_indexes = goals_df.index.to_list()
-    shot_assist_indexes = shot_assists_df.index.to_list()
+    def compare_type_filter(
+        event_type: EventType,
+        type_filter: EventType | None,
+    ) -> bool:
+        """Compare the event type with the type filter."""
+        if type_filter is None:
+            return True
+        return event_type == type_filter
 
-    # Iterate through each shot assist and look for a goal in subsequent events
-    players_assists_dict = {}
-    for shot_assist_idx in shot_assist_indexes:
-        # Get all event indexes that come after the current shot assist
-        subsequent_indexes = [idx for idx in event_indexes if idx > shot_assist_idx]
+    def compare_result_filter(
+        event_result: ResultType,
+        result_filter: list[ResultType] | ResultType | None,
+    ) -> bool:
+        """Compare the event result with the result filter."""
+        if result_filter is None:
+            return True
+        if not hasattr(event_result, "value"):
+            return False
+        if isinstance(result_filter, list):
+            return event_result in result_filter
+        return event_result == result_filter
 
-        for event_idx in subsequent_indexes:
-            event = match_events_df.loc[event_idx]
+    def compare_qualifier_filter(
+        event_qualifiers: list[Qualifier] | None,
+        qualifier_filter: list[Qualifier] | Qualifier | None,
+        exclude_qualifier: bool,
+    ) -> bool:
+        """Compare the event qualifiers with the qualifier filter."""
+        if qualifier_filter is None:
+            return True
+        if not hasattr(event_qualifiers, "__iter__"):
+            return False
+        if isinstance(qualifier_filter, list):
+            has_match = any(q.value in qualifier_filter for q in event_qualifiers)  # type: ignore
+        else:
+            has_match = any(q.value == qualifier_filter for q in event_qualifiers)  # type: ignore
 
-            if event_idx in goal_indexes:  # Found a goal for this shot assist
-                player_name = event["player"]
-                players_assists_dict[player_name] = players_assists_dict.get(player_name, 0) + 1
-                break
-            elif event["event_type"] == "SHOT" and event["result"] != "GOAL":  # Found an unsuccessful shot
-                break
+        return not has_match if exclude_qualifier else has_match
 
-    return players_assists_dict
+    def compare_card_filter(
+        event: Event,
+        card_filter: list[CardType] | CardType | None,
+    ):
+        """Compare the event card type with the card filter."""
+        if card_filter is None:
+            return True
+        if not hasattr(event, "card_type"):
+            return False
+        if isinstance(card_filter, list):
+            return event.card_type in card_filter  # type: ignore
+        return event.card_type == card_filter  # type: ignore
+
+    filtered_dataset = dataset.filter(
+        lambda event: (
+            event.period.id != 5
+            and compare_type_filter(event.event_type, type_filter)
+            and compare_result_filter(event.result, result_filter)  # type: ignore
+            and compare_qualifier_filter(event.qualifiers, qualifier_filter, exclude_qualifier)  # type: ignore
+            and compare_card_filter(event, card_filter)  # type: ignore
+        )
+    )
+
+    return len(filtered_dataset.events)
