@@ -62,27 +62,6 @@ warnings.filterwarnings(
 )
 
 
-def _merge_players_and_team_data(match_id: int) -> pd.DataFrame:
-    """
-    Merge player and team data for a given match.
-
-    Args:
-        match_id (int): StatsBomb match ID.
-
-    Returns:
-        DataFrame containing merged player and team information.
-    """
-    SBL = StatsBombLoader(getter="local", root=str(paths.STATSBOMB_DIR))
-
-    players_df = SBL.players(game_id=match_id)
-    teams_df = SBL.teams(game_id=match_id)
-
-    # Merge players and teams dataframes on team_id
-    merged_df = players_df.merge(teams_df, on="team_id", how="left")
-
-    return merged_df
-
-
 def get_players_info(match_id: int) -> pd.DataFrame:
     """
     Retrieve player information for a given match.
@@ -93,7 +72,12 @@ def get_players_info(match_id: int) -> pd.DataFrame:
     Returns:
         DataFrame containing player names, nicknames, team names, and minutes played.
     """
-    merged_df = _merge_players_and_team_data(match_id)
+    SBL = StatsBombLoader(getter="local", root=str(paths.STATSBOMB_DIR))
+
+    players_df = SBL.players(game_id=match_id)
+    teams_df = SBL.teams(game_id=match_id)
+
+    merged_df = players_df.merge(teams_df, on="team_id", how="left")
 
     return merged_df[["player_name", "nickname", "team_name", "minutes_played"]]
 
