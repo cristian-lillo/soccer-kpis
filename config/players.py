@@ -84,28 +84,23 @@ def get_players_info(match_id: int) -> pd.DataFrame:
 
 def load_match_data(match_id: int) -> tuple[EventDataset, pd.DataFrame]:
     """
-    Load and preprocess match data for a given match ID.
+    Load the event dataset and convert it to a DataFrame for a given match.
 
     Args:
         match_id: StatsBomb match ID.
 
     Returns:
-        A tuple containing the EventDataset and a DataFrame of player events.
+        A tuple containing the EventDataset and a DataFrame of events for the match.
     """
     dataset = statsbomb.load(
         event_data=paths.STATSBOMB_EVENTS_DIR / f"{match_id}.json",
         lineup_data=paths.STATSBOMB_LINEUPS_DIR / f"{match_id}.json",
     )
 
-    # Filter out events from period 5 (penalty shootouts) and convert to DataFrame
-    regular_and_overtime_dataset = dataset.filter(lambda event: event.period.id != 5)
-    events_df = regular_and_overtime_dataset.to_df(*COLUMNS_TO_EXTRACT).astype(DTYPE_MAPPING)
+    filtered_dataset = dataset.filter(lambda event: event.period.id != 5)  # Filter out events from penalty shootouts
+    events_df = filtered_dataset.to_df(*COLUMNS_TO_EXTRACT).astype(DTYPE_MAPPING)
 
-    # Filter events to include only those from players who participated in the match
-    players_info_df = get_players_info(match_id)
-    player_events_df = events_df[events_df["player"].isin(players_info_df["player_name"])]
-
-    return dataset, player_events_df
+    return filtered_dataset, events_df
 
 
 def get_players_position_group(dataset: EventDataset) -> dict[str, str]:
