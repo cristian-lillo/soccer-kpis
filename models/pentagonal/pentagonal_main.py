@@ -7,7 +7,17 @@ This script calculates Opta Points for soccer players based on their match perfo
 import warnings
 
 import pandas as pd
-from kloppy.domain import EventDataset
+from kloppy.domain import (
+    CardType,
+    DuelResult,
+    DuelType,
+    EventDataset,
+    EventType,
+    PassResult,
+    PassType,
+    ShotResult,
+    TakeOnResult,
+)
 from tqdm import tqdm
 
 from config import paths, players, tournaments
@@ -65,120 +75,145 @@ FACTOR_VARIABLES_DF = pd.DataFrame.from_dict(
 
 def extract_player_metrics(
     dataset: EventDataset,
-    match_events_df: pd.DataFrame,
-    player_info_df: pd.DataFrame,
+    players_info_df: pd.DataFrame,
 ) -> dict[str, dict[str, str | int]]:
     """
     Extract player metrics needed for Pentagonal Evaluation Model calculation.
 
     Args:
         dataset: The dataset containing match events and player information.
-        match_events_df: DataFrame containing match events.
-        player_info_df: DataFrame containing player information.
+        players_info_df: DataFrame containing player information.
 
     Returns:
         A dictionary mapping player nicknames to their metrics.
     """
-    player_metrics = {}
-
-    # Map player names to their teams and minutes played for quick access
-    nickname_mapping = dict(zip(player_info_df["player_name"], player_info_df["nickname"]))
-    team_mapping = dict(zip(player_info_df["player_name"], player_info_df["team_name"]))
-    minutes_mapping = dict(zip(player_info_df["player_name"], player_info_df["minutes_played"]))
+    player_metrics: dict[str, dict] = {}
 
     # Get player position mapping and assists count
-    position_mapping = players.get_players_position_group(dataset)
-    assists_mapping = players.count_assists(match_events_df)
+    players_position_dict = players.get_players_position_group(dataset)
 
-    for player_name in match_events_df["player"].unique():
+    for idx, player_name in enumerate(players_info_df["player_name"]):
         # Get specific player event data
-        player_df = match_events_df.loc[match_events_df["player"] == player_name]
+        player_dataset = dataset.filter(
+            lambda event, player_name=player_name: (
+                False if not hasattr(event.player, "name") else event.player.name == player_name
+            )
+        )
 
-        # Use nickname, team and minutes mappings
-        player_nickname = nickname_mapping[player_name] or player_name
-        player_team = team_mapping[player_name]
-        player_minutes = minutes_mapping[player_name]
+        # Get nickname, team and minutes from players_info_df
+        player_nickname = players_info_df.at[idx, "nickname"] or player_name
+        player_team = players_info_df.at[idx, "team_name"]
+        player_minutes = players_info_df.at[idx, "minutes_played"]
 
         # Attacking metrics
-        goals = len(player_df.loc[(player_df["event_type"] == "SHOT") & (player_df["result"] == "GOAL")])
-        assists = assists_mapping.get(player_name, 0)
-        shots = len(player_df.loc[player_df["event_type"] == "SHOT"])
-        shots_on_target = len(
-            player_df.loc[
-                (player_df["event_type"] == "SHOT") & (player_df["result"].isin(["GOAL", "BLOCKED", "SAVED"]))
-            ]
+        goals = players.calculate_metric_for_player_dataset(player_dataset, EventType.SHOT, ShotResult.GOAL)
+        assists = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            PassResult.COMPLETE,
+            PassType.ASSIST,
         )
-        dribbles = len(
-            player_df.loc[
-                (player_df["event_type"] == "DUEL") & (player_df["duel_type"] == "TAKE_ON") & (player_df["success"])
-            ]
+        shots = players.calculate_metric_for_player_dataset(player_dataset, EventType.SHOT)
+        shots_on_target = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.SHOT,
+            [ShotResult.GOAL, ShotResult.BLOCKED, ShotResult.SAVED],
         )
-        key_passes = len(
-            player_df.loc[
-                (player_df["event_type"] == "PASS") & (player_df["pass_type"] == "SMART_PASS") & (player_df["success"])
-            ]
+        dribbles = players.calculate_metric_for_player_dataset(player_dataset, EventType.TAKE_ON, TakeOnResult.COMPLETE)
+        key_passes = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            PassResult.COMPLETE,
+            PassType.SHOT_ASSIST,
         )
-        crosses = len(
-            player_df.loc[
-                (player_df["event_type"] == "PASS") & (player_df["pass_type"] == "CROSS") & (player_df["success"])
-            ]
+        crosses = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            PassResult.COMPLETE,
+            PassType.CROSS,
         )
 
         # Distribution metrics
-        passes = len(player_df.loc[(player_df["event_type"] == "PASS") & (player_df["success"])])
+        passes = players.calculate_metric_for_player_dataset(player_dataset, EventType.PASS, PassResult.COMPLETE)
         passing_accuracy = (
-            (passes / len(player_df.loc[player_df["event_type"] == "PASS"]))
-            if len(player_df.loc[player_df["event_type"] == "PASS"]) > 0
+            passes / players.calculate_metric_for_player_dataset(player_dataset, EventType.PASS)
+            if players.calculate_metric_for_player_dataset(player_dataset, EventType.PASS) > 0
             else 0.0
         )
-        short_passes = len(
-            player_df.loc[
-                (player_df["event_type"] == "PASS") & (player_df["pass_type"] == "SIMPLE_PASS") & (player_df["success"])
-            ]
+        short_passes = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            PassResult.COMPLETE,
+            PassType.LONG_BALL,
+            exclude_qualifier=True,
         )
         short_passing_accuracy = (
             (
                 short_passes
-                / len(player_df.loc[(player_df["event_type"] == "PASS") & (player_df["pass_type"] == "SIMPLE_PASS")])
+                / players.calculate_metric_for_player_dataset(
+                    player_dataset,
+                    EventType.PASS,
+                    qualifier_filter=PassType.LONG_BALL,
+                    exclude_qualifier=True,
+                )
             )
-            if len(player_df.loc[(player_df["event_type"] == "PASS") & (player_df["pass_type"] == "SIMPLE_PASS")]) > 0
+            if players.calculate_metric_for_player_dataset(
+                player_dataset,
+                EventType.PASS,
+                qualifier_filter=PassType.LONG_BALL,
+                exclude_qualifier=True,
+            )
+            > 0
             else 0.0
         )
-        long_passes = len(
-            player_df.loc[
-                (player_df["event_type"] == "PASS") & (player_df["pass_type"] == "LONG_BALL") & (player_df["success"])
-            ]
+        long_passes = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            PassResult.COMPLETE,
+            PassType.LONG_BALL,
         )
         long_passing_accuracy = (
             (
                 long_passes
-                / len(player_df.loc[(player_df["event_type"] == "PASS") & (player_df["pass_type"] == "LONG_BALL")])
+                / players.calculate_metric_for_player_dataset(
+                    player_dataset,
+                    EventType.PASS,
+                    qualifier_filter=PassType.LONG_BALL,
+                )
             )
-            if len(player_df.loc[(player_df["event_type"] == "PASS") & (player_df["pass_type"] == "LONG_BALL")]) > 0
+            if players.calculate_metric_for_player_dataset(
+                player_dataset,
+                EventType.PASS,
+                qualifier_filter=PassType.LONG_BALL,
+            )
+            > 0
             else 0.0
         )
 
         # Defensive metrics
-        balls_recovered = len(player_df.loc[(player_df["event_type"] == "RECOVERY")])
-        tackles = len(
-            player_df.loc[
-                (player_df["event_type"] == "DUEL")
-                & (player_df["duel_type"] == "SLIDING_TACKLE")
-                & (player_df["success"])
-            ]
+        balls_recovered = players.calculate_metric_for_player_dataset(player_dataset, EventType.RECOVERY)
+        tackles = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.DUEL,
+            DuelResult.WON,
+            [DuelType.GROUND, DuelType.SLIDING_TACKLE],
         )
-        clearances = len(player_df.loc[(player_df["event_type"] == "CLEARANCE")])
-        fouls_committed = len(player_df.loc[(player_df["event_type"] == "FOUL_COMMITED")])
-        yellow_cards = len(
-            player_df.loc[(player_df["event_type"] == "CARD") & (player_df["card_type"] == "FIRST_YELLOW")]
+        clearances = players.calculate_metric_for_player_dataset(player_dataset, EventType.CLEARANCE)
+        fouls_committed = players.calculate_metric_for_player_dataset(player_dataset, EventType.FOUL_COMMITTED)
+        yellow_cards = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.CARD,
+            card_filter=CardType.FIRST_YELLOW,
         )
-        red_cards = len(
-            player_df.loc[(player_df["event_type"] == "CARD") & (player_df["card_type"].isin(["SECOND_YELLOW", "RED"]))]
+        red_cards = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.CARD,
+            card_filter=[CardType.SECOND_YELLOW, CardType.RED],
         )
 
-        player_metrics[player_nickname] = {
+        player_metrics[player_nickname] = {  # type: ignore
             "team": player_team,
-            "position": position_mapping[player_name],
+            "position": players_position_dict[player_name],
             "minutes_played": player_minutes,
             "goals": goals,
             "assists": assists,
@@ -221,11 +256,13 @@ def calculate_players_pentagonal_score(player_metrics: dict, FACTOR_VARIABLES_DF
 
     for player, metrics in player_metrics.items():
         player_points = 0
+        factor_scores = {}
 
         for factor in FACTOR_VARIABLES_DF.columns:
             factor_score = sum(
                 metrics[metric] * FACTOR_VARIABLES_DF.loc[metric, factor] for metric in FACTOR_VARIABLES_DF.index
             )
+            factor_scores[factor] = factor_score
             player_points += factor_score * FACTOR_COEFFICIENTS[factor]
 
         # Append player Pentagonal Scores to list
@@ -235,6 +272,11 @@ def calculate_players_pentagonal_score(player_metrics: dict, FACTOR_VARIABLES_DF
                 "team": metrics["team"],
                 "position": metrics["position"],
                 "pentagonal_score": player_points,
+                "f1": factor_scores["F1"],
+                "f2": factor_scores["F2"],
+                "f3": factor_scores["F3"],
+                "f4": factor_scores["F4"],
+                "f5": factor_scores["F5"],
                 "minutes_played": metrics["minutes_played"],
                 "goals": metrics["goals"],
                 "assists": metrics["assists"],
@@ -260,6 +302,11 @@ def calculate_players_pentagonal_score(player_metrics: dict, FACTOR_VARIABLES_DF
 
     # Convert list to DataFrame
     pentagonal_scores_df = pd.DataFrame(pentagonal_scores_list)
+
+    # Sort by Pentagonal Scores and rank players
+    pentagonal_scores_df = pentagonal_scores_df.sort_values("pentagonal_score", ascending=False).reset_index(drop=True)
+    pentagonal_scores_df.insert(0, "rank", range(1, len(pentagonal_scores_df) + 1))
+
     return pentagonal_scores_df
 
 
@@ -275,10 +322,10 @@ def get_match_pentagonal_scores(match_id: int) -> pd.DataFrame:
     """
     # Load players info and match data
     players_info_df = players.get_players_info(match_id)
-    dataset, player_events_df = players.load_match_data(match_id)
+    dataset, _ = players.load_match_data(match_id)
 
     # Extract player metrics
-    player_metrics = extract_player_metrics(dataset, player_events_df, players_info_df)
+    player_metrics = extract_player_metrics(dataset, players_info_df)
 
     # Calculate Pentagonal Scores for players
     pentagonal_scores_df = calculate_players_pentagonal_score(player_metrics, FACTOR_VARIABLES_DF)
@@ -307,6 +354,11 @@ def get_tournament_pentagonal_scores(tournament: dict) -> pd.DataFrame:
             "team",
             "position",
             "pentagonal_score",
+            "f1",
+            "f2",
+            "f3",
+            "f4",
+            "f5",
             "minutes_played",
             "goals",
             "assists",
@@ -361,6 +413,11 @@ def get_tournament_pentagonal_scores(tournament: dict) -> pd.DataFrame:
             {
                 "position": lambda x: x.mode().loc[0],
                 "pentagonal_score": "sum",
+                "f1": "sum",
+                "f2": "sum",
+                "f3": "sum",
+                "f4": "sum",
+                "f5": "sum",
                 "minutes_played": "sum",
                 "goals": "sum",
                 "assists": "sum",
