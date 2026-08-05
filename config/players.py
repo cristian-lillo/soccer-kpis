@@ -115,10 +115,9 @@ def get_players_position_group(dataset: EventDataset) -> dict[str, str]:
     """
     player_positions = {}
 
-    # Iterate through dataset to find player's position history
     for team in dataset.metadata.teams:
         for player in team.players:
-            player_position = ("", 0)
+            player_position = ("Unknown", 0)
 
             for start_time, end_time, position in player.positions.ranges():
                 position_duration = (end_time - start_time).total_seconds()
