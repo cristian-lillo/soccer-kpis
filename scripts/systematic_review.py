@@ -39,7 +39,7 @@ def setup_plotting_style() -> list[str]:
         }
     )
 
-    colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"]
+    colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#00a8a8"]
 
     return colors
 
@@ -76,25 +76,19 @@ def generate_charts(papers_df: pd.DataFrame, colors: list[str], format: str = "p
     plt.savefig(chart1_filepath, bbox_inches="tight")
     plt.close()
 
-    # Chart 2: Data Types (Donut Chart)
-    plt.figure(figsize=(6, 6))
+    # Chart 2: Data Types (Horizontal Bar Chart)
+    plt.figure(figsize=(7, 4.5))
 
     exploded_data_type = papers_df["data_type"].explode()
-    data_type_counts = exploded_data_type.value_counts()
-    total_data_types = data_type_counts.sum() / 100.0
+    data_type_counts = exploded_data_type.value_counts().sort_values(ascending=True)
 
-    plt.pie(
-        data_type_counts.values,
-        labels=data_type_counts.index,
-        autopct=lambda x: f"{round(x * total_data_types)}",
-        pctdistance=0.8,
-        startangle=140,
-        colors=colors,
-        wedgeprops={"width": 0.4, "edgecolor": "w"},
-    )
+    plt.barh(data_type_counts.index, data_type_counts.values, color=colors[5], zorder=3)
+    plt.grid(axis="x", linestyle="--", alpha=0.7, zorder=0)
+    plt.xticks(range(int(data_type_counts.max()) + 2))
 
     if format == "png":
         plt.title("Tipos de Datos Utilizados en los Estudios")
+    plt.xlabel("Cantidad de Estudios")
 
     chart2_filepath = format_folder / f"papers_tipo_de_datos.{format}"
     plt.savefig(chart2_filepath, bbox_inches="tight")
