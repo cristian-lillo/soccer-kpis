@@ -26,6 +26,13 @@ STATSBOMB_EVENTS_DIR = STATSBOMB_DIR / "events"
 STATSBOMB_THREE_SIXTY_DIR = STATSBOMB_DIR / "three-sixty"
 STATSBOMB_COMPETITIONS_FILE = STATSBOMB_DIR / "competitions.json"
 
+# SPADL data (soccer-kpis/data/socceraction)
+SOCCERACTION_DIR = DATA_DIR / "socceraction"
+SPADL_H5 = SOCCERACTION_DIR / "spadl.h5"
+FEATURES_H5 = SOCCERACTION_DIR / "features.h5"
+LABELS_H5 = SOCCERACTION_DIR / "labels.h5"
+PREDICTIONS_H5 = SOCCERACTION_DIR / "predictions.h5"
+
 # Define models directory (soccer-kpis/models)
 MODELS_DIR = PROJECT_ROOT / "models"
 
@@ -78,6 +85,7 @@ def setup_project_directories():
         STATSBOMB_LINEUPS_DIR,
         STATSBOMB_EVENTS_DIR,
         STATSBOMB_THREE_SIXTY_DIR,
+        SOCCERACTION_DIR,
         MODELS_DIR,
         EA_SPORTS_PPI_DIR,
         OPTA_POINTS_DIR,
