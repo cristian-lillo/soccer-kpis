@@ -567,6 +567,192 @@ def plot_topk_matrix(
     plt.close()
 
 
+def _latex_value(value: float | None, decimals: int = 3) -> str:
+    if value is None or pd.isna(value):
+        return "---"
+    text = f"{float(value):.{decimals}f}"
+    return text.rstrip("0").rstrip(".")
+
+
+def _matrix_to_latex_tabular(
+    title: str,
+    matrix: pd.DataFrame,
+    labels: list[str],
+) -> str:
+    column_spec = "c | " + " ".join(["c"] * len(labels))
+    lines = [
+        f"    \\begin{{tabular}}{{{column_spec}}}",
+        f"        \\textbf{{{title}}} & " + " & ".join(labels) + " \\\\ \\hline",
+    ]
+
+    for row_label in labels:
+        row_values = [row_label]
+        for col_label in labels:
+            if row_label == col_label:
+                row_values.append("---")
+            else:
+                row_values.append(_latex_value(matrix.loc[row_label, col_label]))
+        lines.append("        " + " & ".join(row_values) + " \\\\")
+    lines.append("    \\end{tabular}")
+    return "\n".join(lines)
+
+
+def _build_symmetric_matrix(
+    df: pd.DataFrame,
+    labels: list[str],
+    left_col: str,
+    right_col: str,
+    value_col: str,
+) -> pd.DataFrame:
+    matrix = pd.DataFrame(index=labels, columns=labels, dtype=float)
+    for label in labels:
+        matrix.loc[label, label] = np.nan
+
+    for _, row in df.iterrows():
+        left = row[left_col]
+        right = row[right_col]
+        if left not in labels or right not in labels:
+            continue
+        matrix.loc[left, right] = row[value_col]
+        matrix.loc[right, left] = row[value_col]
+
+    return matrix
+
+
+def _get_tournament_group(tournament: dict[str, str | int]) -> str:
+    national_labels = {t["label"] for t in tournaments.NATIONAL_TEAM_TOURNAMENTS}
+    return "selecciones" if tournament["label"] in national_labels else "ligas"
+
+
+def generate_latex_comparison_tables(
+    selected_tournaments: list[dict[str, str | int]] = tournaments.ALL_TOURNAMENTS,
+    top_k: int = 10,
+    output_filename: str = "comparison_tables_total.tex",
+) -> str:
+    """
+    Generate LaTeX tables for total-score comparisons.
+
+    - Jaccard tables are grouped by competition type.
+    - Pearson and Spearman tables are generated per competition.
+    """
+    comparison_dir = paths.OUTPUT_DIR / "comparisons" / "latex"
+    comparison_dir.mkdir(parents=True, exist_ok=True)
+    output_path = comparison_dir / output_filename
+
+    short_names = {key: info["short_name"] for key, info in EVALUATION_MODELS_INFO.items()}
+    normalized_score_names = {
+        f"{key}_normalized_score": info["short_name"] for key, info in EVALUATION_MODELS_INFO.items()
+    }
+    normalized_rank_names = {
+        f"{key}_normalized_rank": info["short_name"] for key, info in EVALUATION_MODELS_INFO.items()
+    }
+
+    grouped_jaccard_blocks: dict[str, list[str]] = {"selecciones": [], "ligas": []}
+    pearson_blocks: list[str] = []
+
+    for tournament in selected_tournaments:
+        tables = build_comparison_tables_for_tournament(
+            tournament=tournament,
+            per_90=False,
+            top_k=top_k,
+        )
+        if tables["merged_table"].empty:
+            continue
+
+        tournament_label = str(tournament["label"])
+        tournament_name = str(tournament["display_name"])
+
+        # ---- Jaccard ----
+        jaccard_df = tables["jaccard_df"].copy()
+        jaccard_df["model_1"] = jaccard_df["model_1"].map(short_names)
+        jaccard_df["model_2"] = jaccard_df["model_2"].map(short_names)
+
+        jaccard_matrix = _build_symmetric_matrix(
+            jaccard_df.rename(
+                columns={
+                    "model_1": "left_model",
+                    "model_2": "right_model",
+                }
+            ),
+            labels=list(short_names.values()),
+            left_col="left_model",
+            right_col="right_model",
+            value_col="jaccard_top_k",
+        )
+
+        jaccard_block = "\n".join(
+            [
+                "\\begin{table}[ht]",
+                "    \\centering",
+                f"{_matrix_to_latex_tabular(tournament_name, jaccard_matrix, list(short_names.values()))}",
+                "",
+                f"    \\caption{{Índice de Jaccard para top {top_k} jugadores de {tournament_name}}}",
+                f"    \\label{{tab:jaccard-{tournament_label}}}",
+                "\\end{table}",
+            ]
+        )
+        grouped_jaccard_blocks[_get_tournament_group(tournament)].append(jaccard_block)
+
+        # ---- Pearson / Spearman ----
+        pearson_matrix = (
+            tables["pearson_df"]
+            .rename(
+                index=normalized_score_names,
+                columns=normalized_score_names,
+            )
+            .reindex(index=list(short_names.values()), columns=list(short_names.values()))
+        )
+
+        spearman_matrix = (
+            tables["spearman_df"]
+            .rename(
+                index=normalized_rank_names,
+                columns=normalized_rank_names,
+            )
+            .reindex(index=list(short_names.values()), columns=list(short_names.values()))
+        )
+
+        pearson_blocks.append(
+            "\n".join(
+                [
+                    "\\begin{table}[ht]",
+                    "    \\centering",
+                    f"{_matrix_to_latex_tabular('Pearson', pearson_matrix, list(short_names.values()))}",
+                    "",
+                    "\\bigskip",
+                    "",
+                    f"{_matrix_to_latex_tabular('Spearman', spearman_matrix, list(short_names.values()))}",
+                    "",
+                    f"    \\caption{{Coeficientes de Pearson y Spearman para {tournament_name}}}",
+                    f"    \\label{{tab:coeficientes-{tournament_label}}}",
+                    "\\end{table}",
+                ]
+            )
+        )
+
+    latex_sections: list[str] = []
+
+    for group_name, blocks in grouped_jaccard_blocks.items():
+        if not blocks:
+            continue
+        title = "selecciones" if group_name == "selecciones" else "ligas"
+        latex_sections.append(
+            "\n".join(
+                [
+                    f"% --- Jaccard: {title} ---",
+                    "\n\\bigskip\n".join(blocks),
+                ]
+            )
+        )
+
+    latex_sections.append("% --- Pearson / Spearman por competencia ---")
+    latex_sections.extend(pearson_blocks)
+
+    output_text = "\n\n".join(latex_sections)
+    output_path.write_text(output_text, encoding="utf-8")
+    return output_text
+
+
 def main():
     """Main function to execute the evaluation models and compare their outputs."""
 
@@ -586,6 +772,8 @@ def main():
 
             generate_comparison_tables(selected_tournaments, per_90=False, top_k=10, save_plots=True, format=format)
             generate_comparison_tables(selected_tournaments, per_90=True, top_k=10, save_plots=True, format=format)
+
+        generate_latex_comparison_tables(selected_tournaments, top_k=10, output_filename="comparison_tables_total.tex")
 
 
 if __name__ == "__main__":
