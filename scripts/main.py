@@ -78,14 +78,14 @@ EVALUATION_MODELS_INFO = {
     },
 }
 
-TOP10_OUTSIDE_CATEGORY = 11
+TOP10_OUTSIDE_CATEGORY = 11  # Used for players outside the top 10 in the ranking matrix
 
 
 def get_min_minutes_threshold(tournament: dict[str, str | int]) -> int:
     if tournament in tournaments.NATIONAL_TEAM_TOURNAMENTS:
-        return 90 * 2  # Minimum 2 matches for national team tournaments
+        return 90 * 2  # Minimum of 2 matches for national team tournaments
     else:
-        return 90 * 5  # Minimum 5 matches for club leagues
+        return 90 * 5  # Minimum of 5 matches for club leagues
 
 
 def run_evaluation_models(evaluation_models: dict[str, dict] = EVALUATION_MODELS_INFO):
@@ -95,8 +95,8 @@ def run_evaluation_models(evaluation_models: dict[str, dict] = EVALUATION_MODELS
     Args:
         evaluation_models : Dictionary of model names and their information to run.
     """
-    for model in evaluation_models:
-        evaluation_models[model]["script"].main()
+    for model_info in evaluation_models.values():
+        model_info["script"].main()
 
 
 def normalize_performance_scores(
@@ -156,8 +156,7 @@ def generate_plots_for_score_per_match(
         tournament_label = tournament["label"]
         tournament_display_name = tournament["display_name"]
 
-        for model in EVALUATION_MODELS_INFO:
-            model_info = EVALUATION_MODELS_INFO[model]
+        for model, model_info in EVALUATION_MODELS_INFO.items():
             model_output_directory = model_info["output_directory"]
             performance_score_column = model_info["performance_score"]
             model_display_name = model_info["display_name"]
@@ -350,8 +349,7 @@ def build_comparison_tables_for_tournament(
     model_tables: list[pd.DataFrame] = []
     topk_rows: list[pd.DataFrame] = []
 
-    for model in EVALUATION_MODELS_INFO:
-        model_info = EVALUATION_MODELS_INFO[model]
+    for model, model_info in EVALUATION_MODELS_INFO.items():
         model_output_directory = model_info["output_directory"]
         performance_score_column = model_info["performance_score"]
         model_display_name = model_info["display_name"]
@@ -460,9 +458,10 @@ def save_comparison_tables(
         top_k: Number of top players to consider for Jaccard similarity and plotting.
     """
     tournament_label = str(tournament["label"])
+    dir_per_90 = "per_90" if per_90 else ""
     suffix = "per_90" if per_90 else "total"
 
-    comparison_root_dir = paths.OUTPUT_DIR / "comparisons"
+    comparison_root_dir = paths.OUTPUT_DIR / "comparisons" / dir_per_90
     comparison_root_dir.mkdir(parents=True, exist_ok=True)
 
     tournament_dir = comparison_root_dir / tournament_label
@@ -506,6 +505,7 @@ def plot_topk_matrix(
     """
     tournament_label = str(tournament["label"])
     tournament_display_name = str(tournament["display_name"])
+    dir_per_90 = "per_90" if per_90 else ""
     suffix = "per_90" if per_90 else "total"
 
     colors = [
@@ -561,7 +561,7 @@ def plot_topk_matrix(
     plt.title(f"Top {top_k} por modelo - {tournament_display_name}{title_suffix}")
     plt.tight_layout()
 
-    plot_dir = paths.FIGURES_OUTPUT_DIR / f"comparison_tables_{suffix}" / format
+    plot_dir = paths.FIGURES_OUTPUT_DIR / "comparison_tables" / format / dir_per_90
     plot_dir.mkdir(parents=True, exist_ok=True)
     plt.savefig(plot_dir / f"{tournament_label}_top{top_k}_{suffix}.{format}")
     plt.close()
@@ -768,10 +768,10 @@ def main():
             generate_plots_for_score_per_match(selected_tournaments, format=format)
 
             generate_plots_for_model_scores(selected_tournaments, per_90=False, format=format)
-            generate_plots_for_model_scores(selected_tournaments, per_90=True, format=format)
+            # generate_plots_for_model_scores(selected_tournaments, per_90=True, format=format)
 
             generate_comparison_tables(selected_tournaments, per_90=False, top_k=10, save_plots=True, format=format)
-            generate_comparison_tables(selected_tournaments, per_90=True, top_k=10, save_plots=True, format=format)
+            # generate_comparison_tables(selected_tournaments, per_90=True, top_k=10, save_plots=True, format=format)
 
         generate_latex_comparison_tables(selected_tournaments, top_k=10, output_filename="comparison_tables_total.tex")
 
