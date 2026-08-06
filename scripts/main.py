@@ -193,16 +193,19 @@ def generate_plots_for_model_scores(
     format: str = "pdf",
 ) -> None:
     """
-    Generate one plot per model and an additional combined plot per tournament.
+    Generate one histogram per model and an additional combined histogram per tournament.
 
     Args:
         selected_tournaments: List of tournaments to process.
         per_90: If True, normalize scores to a per-90 rate.
         format: The format in which to save the charts (default is "pdf").
     """
-    plot_label = "score_per_90" if per_90 else "total_score"
-    output_dir = paths.FIGURES_OUTPUT_DIR / plot_label / format
+    plot_label = "score_distribution"
+    dir_per_90 = "per_90" if per_90 else ""
+    output_dir = paths.FIGURES_OUTPUT_DIR / plot_label / format / dir_per_90
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    bins = 30
 
     for tournament in selected_tournaments:
         tournament_label = tournament["label"]
@@ -211,8 +214,7 @@ def generate_plots_for_model_scores(
         combined_figure = plt.figure(figsize=(10, 6))
         combined_ax = combined_figure.gca()
 
-        for model in EVALUATION_MODELS_INFO:
-            model_info = EVALUATION_MODELS_INFO[model]
+        for model, model_info in EVALUATION_MODELS_INFO.items():
             model_output_directory = model_info["output_directory"]
             performance_score_column = model_info["performance_score"]
             model_display_name = model_info["display_name"]
@@ -228,44 +230,54 @@ def generate_plots_for_model_scores(
                     per_90=per_90,
                 )
 
-                plt.figure(figsize=(10, 6))
-                plt.plot(
-                    normalized_df["normalized_rank"] / len(normalized_df),
-                    normalized_df["normalized_score"],
-                    color=model_plot_color,
-                    linewidth=2,
-                )
+                scores = normalized_df["normalized_score"].dropna()
+                weights = np.ones(len(scores)) / len(scores) if len(scores) else None
 
+                plt.figure(figsize=(10, 6))
+                plt.hist(
+                    scores,
+                    bins=bins,
+                    weights=weights,
+                    color=model_plot_color,
+                    alpha=0.85,
+                    edgecolor="white",
+                )
                 title_suffix = " por 90 Minutos" if per_90 else ""
-                plt.title(f"{model_display_name} - {tournament_display_name}{title_suffix}")
-                plt.xlabel("Percentil de ranking")
-                plt.ylabel("Puntaje normalizado")
-                plt.grid(alpha=0.25)
+                plt.title(f"Distribución de puntajes{title_suffix} - {tournament_display_name} - {model_display_name}")
+                plt.xlabel("Puntaje normalizado")
+                plt.ylabel("Proporción")
+                plt.ylim(0, 0.4)
+                plt.grid(alpha=0.25, axis="y")
                 plt.tight_layout()
 
-                suffix = "per_90" if per_90 else "total"
-                plt.savefig(output_dir / f"{tournament_label}_{model}_{suffix}.{format}")
+                suffix = "_per_90" if per_90 else ""
+                plt.savefig(output_dir / f"{tournament_label}_{model}_{plot_label}{suffix}.{format}")
                 plt.close()
 
-                combined_ax.plot(
-                    normalized_df["normalized_rank"] / len(normalized_df),
-                    normalized_df["normalized_score"],
+                combined_ax.hist(
+                    scores,
+                    bins=bins,
+                    weights=weights,
+                    histtype="step",
+                    linewidth=2,
                     color=model_plot_color,
-                    linewidth=1.6,
-                    alpha=0.85,
                     label=model_display_name,
+                    alpha=0.9,
                 )
 
         combined_title_suffix = " por 90 Minutos" if per_90 else ""
-        combined_ax.set_title(f"Comparación general de puntajes - {tournament_display_name}{combined_title_suffix}")
-        combined_ax.set_xlabel("Percentil de ranking")
-        combined_ax.set_ylabel("Puntaje normalizado")
-        combined_ax.grid(alpha=0.25)
+        combined_ax.set_title(
+            f"Comparación general de distribuciones - {tournament_display_name}{combined_title_suffix}"
+        )
+        combined_ax.set_xlabel("Puntaje normalizado")
+        combined_ax.set_ylabel("Proporción")
+        combined_ax.set_ylim(0, 0.4)
+        combined_ax.grid(alpha=0.25, axis="y")
         combined_ax.legend()
         combined_figure.tight_layout()
 
-        suffix = "per_90" if per_90 else "total"
-        combined_figure.savefig(output_dir / f"{tournament_label}_{suffix}.{format}")
+        suffix = "_per_90" if per_90 else ""
+        combined_figure.savefig(output_dir / f"{tournament_label}__{plot_label}{suffix}.{format}")
         plt.close(combined_figure)
 
 
