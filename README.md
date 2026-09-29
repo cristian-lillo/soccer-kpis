@@ -1,108 +1,116 @@
 # Soccer KPIs
 
-A comprehensive analysis framework for football Key Performance Indicators (KPIs) developed as a thesis project for the Master of Science in Computer Science at the University of Chile.
+Soccer KPIs is the code repository for Cristian Lillo's Master of Science in Computer Science thesis at the University of Chile. It implements and compares player-performance measures derived from event data, using a common StatsBomb processing pipeline and a reproducible set of analyses and figures.
 
-## Overview
+## What is included
 
-This research project focuses on developing and validating advanced methodologies for football analytics, specifically targeting the creation, analysis, and interpretation of Key Performance Indicators in professional football. The project leverages multiple data sources and state-of-the-art analytical techniques to provide insights into player and team performance.
+The repository contains six evaluation models:
 
-## Key Features
+- **Plus-Minus**
+- **Pentagonal Score**
+- **PlayeRank**
+- **VAEP** (Valuing Actions by Estimating Probabilities)
+- **EA Sports PPI**
+- **Opta Points**
 
-- **Multi-source Data Integration**: Support for various football data providers including StatsBomb, Wyscout, and regional datasets
-- **Standardized Data Processing**: Utilizes [kloppy](https://github.com/PySport/kloppy) for unified data handling across different formats
-- **Advanced Analytics**: Implementation of modern football analytics methodologies including VAEP, PlayerRank, and custom KPI frameworks
-- **Comprehensive Validation**: Cross-validation using multiple datasets from different leagues and competitions
+`config/` centralizes project paths, the competitions/seasons used in the thesis, and player extraction helpers. `models/` contains one implementation per method. `scripts/main.py` runs models when enabled, normalizes their scores, produces comparison tables, computes Pearson/Spearman correlations and Jaccard similarity, and generates figures. `notebooks/` contains exploratory and presentation material.
 
-## Project Structure
+## Repository layout
 
-```
+```text
 soccer-kpis/
-├── data/                   # Data from various providers (see data/README.md)
-├── models/                 # Implementations of football analytics methodologies
-│   ├── ea-sports-ppi/          # EA Sports Player Performance Index
-│   ├── playerank/              # PlayerRank methodology implementation
-│   └── vaep/                   # VAEP and SPADL implementations
-├── notebooks/              # Jupyter notebooks for data analysis and exploration
-├── scripts/                # Utility scripts for data processing and configuration
-├── requirements.txt        # Project dependencies
-└── README.md               # This file
+├── config/       # Paths, tournament definitions, and player utilities
+├── data/         # Local datasets; see data/README.md
+├── models/       # Six player-performance model implementations
+├── notebooks/    # Exploration and thesis analyses
+├── scripts/      # Analysis, plotting, summary, and benchmark scripts
+├── output/       # Generated model tables and comparisons
+├── figures/      # Generated PDF/PNG figures
+├── pyproject.toml
+└── README.md
 ```
 
-## Installation
+`data/`, `output/` CSV/TEX files, and `figures/` are intentionally ignored by Git. They are local inputs or generated artefacts, not source code. A fresh clone therefore needs the datasets and generated model outputs to be restored locally before reproducing all analyses. See [`data/README.md`](data/README.md).
 
-### Prerequisites
+## Requirements and installation
 
-This project requires **Python 3.12** to ensure compatibility with all analytical libraries. Some dependencies are not yet compatible with Python 3.13.
+The project is tested with **Python 3.12**. Python 3.13 is not currently supported by all analytical dependencies.
 
-**Download Python 3.12.10**: [Official Python Release](https://www.python.org/downloads/release/python-31210/)
-
-### Setup
-
-1. Clone the repository:
 ```bash
 git clone https://github.com/cristian-lillo/soccer-kpis.git
 cd soccer-kpis
+python -m venv .venv
 ```
 
-2. Create and activate a virtual environment:
+Activate the environment:
+
 ```bash
-python -m venv .venv
-# Windows
-.venv\Scripts\activate
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
+
 # macOS/Linux
 source .venv/bin/activate
 ```
 
-3. Install dependencies:
+Install the project and its dependencies:
+
 ```bash
-pip install -r requirements.txt
+python -m pip install -e .
 ```
 
-## Data Sources
+The local StatsBomb snapshot must be placed under `data/statsbomb/` with `competitions.json`, `matches/`, `lineups/`, `events/`, and, when available, `three-sixty/`. The repository does not redistribute provider data; consult StatsBomb's [Open Data repository](https://github.com/statsbomb/open-data) and its terms of use.
 
-This project integrates data from multiple providers to ensure comprehensive analysis. See [`data/README.md`](data/README.md) for detailed information about:
+## Running the analyses
 
-- **StatsBomb Open Data**: Extensive event data with tactical annotations
-- **Wyscout Academic Dataset**: European leagues and international tournaments
-- **Chilean Primera División**: Regional competition data for validation
-- Additional reference datasets for methodology comparison
+From the repository root, use module execution so the local packages resolve correctly:
 
-## Methodologies
+```bash
+python -m scripts.main
+```
 
-The project implements and compares several established football analytics frameworks:
+Python normally creates `__pycache__/` directories when importing modules. They are ignored by Git, but can be disabled during local runs with `-B` or `PYTHONDONTWRITEBYTECODE=1`:
 
-### VAEP (Valuing Actions by Estimating Probabilities)
-Implementation of the Decroos et al. methodology for action valuation in football.
+```bash
+# Windows PowerShell
+$env:PYTHONDONTWRITEBYTECODE = "1"
+python -m scripts.main
 
-### PlayerRank
-Implementation of the Pappalardo et al. player ranking system based on network analysis.
+# One command, any shell
+python -B -m scripts.main
+```
 
-### Custom KPI Framework
-Development of novel Key Performance Indicators tailored for specific analytical needs.
+The script currently runs comparisons and figures for the ten configured competition-season datasets. Model execution is guarded by `run_models_flag` in `scripts/main.py`; set it to `True` only when model outputs need to be regenerated. The resulting tables are written under `output/comparisons/`, and figures under `figures/`, in PDF and PNG formats. Per-90 analyses use the same minimum-playing-time population as the correlations: 450 minutes for club leagues and 180 minutes for national-team tournaments.
 
-## Research Objectives
+Two local utility scripts provide the requested dataset and computational summaries:
 
-1. **Methodological Validation**: Compare and validate existing football analytics methodologies
-2. **Regional Analysis**: Analyze performance patterns in different football contexts
-3. **KPI Development**: Create and validate new Key Performance Indicators
-4. **Framework Integration**: Develop a unified framework for football performance analysis
+```bash
+python -m scripts.dataset_summary
+python -m scripts.benchmark_models
+```
 
-## Contributing
+To retry only models recorded as failed in the existing checkpoint, use:
 
-This is a thesis project, but contributions and discussions are welcome. Please feel free to open issues or submit pull requests.
+```bash
+python -m scripts.benchmark_models --failed-only
+```
 
-## License
+To skip completed models and run everything else, use `--resume`. The plotting functions are kept in `scripts/plots.py`, while `scripts/comparisons.py` calculates correlations, Jaccard similarities, ranking tables, and LaTeX output. Shared filtering and score-normalization helpers are in `scripts/utils.py`; `scripts/main.py` only orchestrates model execution and calls these modules. The first utility prints the number of competitions, seasons/editions, matches, players, and events in the local StatsBomb snapshot. The second executes each model over the configured dataset, measures wall-clock time with `time.perf_counter()`, records each model's start and finish timestamps, and writes checkpoint results to `output/model_runtime_benchmark.csv`. These files are supplementary local tooling and can be omitted from a final source release if only the thesis artefacts are required.
 
-This project is developed for academic purposes as part of a Master's thesis at the University of Chile.
+## Data sources
 
-## Author
+The comparative evaluation uses the local StatsBomb Open Data snapshot for all competitions, seasons, matches, players, and events. The Wyscout/Pappalardo dataset is retained only as an auxiliary source for the PlayeRank training weights; it is not part of the comparative tests. Detailed provenance, directory conventions, licensing notes, and the current StatsBomb snapshot summary are documented in [`data/README.md`](data/README.md).
+
+## Reproducibility notes
+
+Model scores depend on the exact local data snapshot, Python version, dependency versions, and machine. Runtime measurements are therefore descriptive rather than hardware-independent complexity claims. Generated CSV, TEX, and figure files should be regenerated locally rather than committed as source inputs.
+
+## Author and acknowledgement
 
 **Cristian Lillo Ciero**
-Master of Science in Computer Science
-University of Chile
+Master of Science in Computer Science, University of Chile
 
-## Acknowledgments
+This work acknowledges the University of Chile Department of Computer Science, the [PySport](https://github.com/PySport) community, StatsBomb, Wyscout, and the authors of the methods implemented in this repository.
 
-- University of Chile, Department of Computer Science
-- [PySport](https://github.com/PySport) community for the kloppy library
-- Data providers: StatsBomb, Wyscout, and others for making football data accessible for research
+## License and data use
+
+The source code is provided for academic and research purposes. Each external dataset remains subject to its provider's licence and terms. In particular, publishing this code does not grant permission to redistribute StatsBomb or private Wyscout data.
