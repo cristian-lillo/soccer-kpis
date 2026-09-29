@@ -1,59 +1,62 @@
 # Data
 
-## Source
+This directory contains local inputs for the thesis analyses. It is excluded from Git (`/data/*`) because the repository should not redistribute provider data, private Wyscout data, or large derived HDF5 files. The directory layout below is nevertheless part of the expected interface of the code.
 
-The following providers are all supported by the [kloppy repository](https://github.com/PySport/kloppy), which provides a standardized interface for working with different football data formats, facilitating centralized data processing and analysis.
+## Directory layout
 
-## Providers
+```text
+data/
+├── statsbomb/
+│   ├── competitions.json
+│   ├── matches/<competition_id>/<season_id>.json
+│   ├── lineups/<match_id>.json
+│   ├── events/<match_id>.json
+│   └── three-sixty/<match_id>.json       # optional
+├── pappalardo/                           # Auxiliary data for PlayeRank weights
+│   ├── competitions.json
+│   ├── matches/
+│   ├── events/
+│   └── players.json, teams.json, ...
+├── papers/                               # systematic-review input
+└── socceraction/                         # generated SPADL/features/labels
+```
 
-### StatsBomb
-- **Source**: [StatsBomb Open Data](https://github.com/statsbomb/open-data)
-- **Type**: Event data with detailed tactical information
-- **Content**: Extensive collection of matches from multiple high-profile competitions including FIFA World Cup, UEFA European Championships, Premier League, and various domestic leagues
-- **Usage**: ✅ Will be used - Comprehensive open dataset with rich tactical context
+The StatsBomb loader is configured in `config/tournaments.py` and `config/paths.py`. The ten competition-season pairs used by the comparative tests are five 2015/2016 European leagues (Premier League, La Liga, Serie A, 1. Bundesliga, and Ligue 1) plus World Cups 2018/2022, UEFA Euros 2020/2024, and Copa America 2024. Every comparative model receives its input from the corresponding local StatsBomb matches, lineups, and events.
 
-### Wyscout
-- **Source**: [Soccer match event dataset](https://figshare.com/collections/Soccer_match_event_dataset/4415000/2)
-- **Type**: Event data from academic research
-- **Content**: Comprehensive dataset including matches from the 2017/2018 season across major European leagues (Serie A, Premier League, Bundesliga, La Liga, Ligue 1), plus international tournaments (Euro 2016 and World Cup 2018)
-- **Usage**: ✅ Will be used - Academic dataset used in PlayerRank paper
+## StatsBomb Open Data
 
-### Chile
-- **Source**: Private Wyscout data
-- **Type**: Event data from Chilean football
-- **Content**: Comprehensive coverage of Chilean Primera División matches spanning multiple seasons (2022-2024), providing detailed event data from South American football
-- **Usage**: ✅ Will be used - Enables analysis of regional football patterns and KPI validation in different competitive contexts
+Source: [statsbomb/open-data](https://github.com/statsbomb/open-data). It is event data with match metadata, lineups, player information, and tactical annotations. Download or obtain the data directly from StatsBomb, preserve the directory structure above, and follow the provider's terms before using or publishing it. The optional `three-sixty` files are not required by every model.
 
-### Metrica Sports
-- **Source**: [Metrica Sports sample data](https://github.com/metrica-sports/sample-data)
-- **Type**: Tracking and event data
-- **Content**: High-quality sample matches featuring detailed player positioning data and ball tracking information
-- **Usage**: 🔍 Reference - Provides examples of professional-grade tracking data for methodology comparison
+### Snapshot summary
 
-### SkillCorner
-- **Source**: [SkillCorner Open Data](https://github.com/SkillCorner/opendata)
-- **Type**: Tracking data
-- **Content**: Sample matches with comprehensive player and ball tracking, including advanced metrics and positioning analytics
-- **Usage**: 🔍 Reference - Demonstrates state-of-the-art tracking data capabilities
+The current local snapshot, restricted to the ten competition-season datasets used in the comparative evaluation, was counted with `python -m scripts.dataset_summary`:
 
-### Sportec Solutions
-- **Source**: [DFL (German Football League) data](https://doi.org/10.6084/m9.figshare.28196177)
-- **Type**: Official match data in XML format
-- **Content**: Professional Bundesliga match information and events in standardized XML format, representing official league data structure
-- **Usage**: 🔍 Reference - Example of official league data formatting and structure
+| Measure | Count |
+| --- | ---: |
+| Competitions | 10 |
+| Seasons/editions | 10 |
+| Matches | 2,085 |
+| Players (unique `player_id` in lineups) | 4,814 |
+| Events | 7,334,694 |
 
-## Primary Datasets
+These counts describe the local files selected for the thesis, not a permanent claim about StatsBomb Open Data: future provider updates can change them. The script counts unique match IDs, player IDs, and event records only when the match belongs to one of the ten configured competition-season pairs in `config/tournaments.py`.
 
-The selected datasets for this thesis research are strategically chosen to provide comprehensive coverage and analytical depth:
+## Pappalardo / Wyscout auxiliary data
 
-1. **StatsBomb Open Data** - Delivers extensive event data with rich tactical annotations across multiple high-profile competitions, providing an ideal foundation for comprehensive KPI analysis and validation across different competitive levels.
+`pappalardo/` stores the academic Wyscout event dataset and supporting metadata used only to obtain the PlayeRank training weights. Its source is the [Soccer match event dataset](https://figshare.com/collections/Soccer_match_event_dataset/4415000/2). It is not used as an input dataset in the comparative evaluation reported by this project. Verify the original licence and citation requirements before redistribution.
 
-2. **Chile (Wyscout)** - Contributes local competition data from Chilean Primera División, enabling the analysis of regional football patterns and validation of KPI methodologies in South American football contexts, adding geographical diversity to the research.
+The project may also use a private Wyscout export for Chilean Primera División in local experiments. That data must not be committed or published; it is not required for the public repository to install.
 
-3. **Wyscout** - Functions as the primary academic reference dataset, particularly valuable for PlayerRank methodology validation and comparison with established research frameworks in football analytics.
+## Other referenced datasets
 
-These datasets collectively provide an optimal research foundation through:
-- **Comprehensive Volume**: Hundreds of professional matches spanning different competitions and geographical regions
-- **Data Quality**: Professional-grade event annotations with detailed tactical and contextual information
-- **Competitive Diversity**: Multiple leagues, playing styles, and competitive levels from European and South American football
-- **Research Accessibility**: Open-source and academically available datasets ensuring reproducibility and transparency
+The following public projects are references or examples rather than required inputs for the main pipeline:
+
+| Dataset | Format/use |
+| --- | --- |
+| [Metrica Sports sample data](https://github.com/metrica-sports/sample-data) | Tracking and event-data examples |
+| [SkillCorner Open Data](https://github.com/SkillCorner/opendata) | Tracking-data examples |
+| [Sportec Solutions / DFL](https://doi.org/10.6084/m9.figshare.28196177) | Bundesliga XML match-data example |
+
+## Generated data
+
+The `socceraction/` HDF5 files are derived intermediates used by VAEP (SPADL, features, labels, and predictions). Model CSV outputs are written under `output/`; figures are written under `figures/`. Both are generated locally and ignored by Git. Do not treat these derived files as authoritative inputs: regenerate them after changing data, dependencies, or model code.
