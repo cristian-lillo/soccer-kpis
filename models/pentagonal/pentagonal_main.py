@@ -89,7 +89,7 @@ def extract_player_metrics(
     """
     player_metrics: dict[str, dict] = {}
 
-    # Get player position mapping and assists count
+    # Get player position mapping
     players_position_dict = players.get_players_position_group(dataset)
 
     for idx, player_name in enumerate(players_info_df["player_name"]):
@@ -106,20 +106,31 @@ def extract_player_metrics(
         player_minutes = players_info_df.at[idx, "minutes_played"]
 
         # Attacking metrics
-        goals = players.calculate_metric_for_player_dataset(player_dataset, EventType.SHOT, ShotResult.GOAL)
+        goals = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.SHOT,
+            ShotResult.GOAL,
+        )
         assists = players.calculate_metric_for_player_dataset(
             player_dataset,
             EventType.PASS,
             PassResult.COMPLETE,
             PassType.ASSIST,
         )
-        shots = players.calculate_metric_for_player_dataset(player_dataset, EventType.SHOT)
+        shots = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.SHOT,
+        )
         shots_on_target = players.calculate_metric_for_player_dataset(
             player_dataset,
             EventType.SHOT,
             [ShotResult.GOAL, ShotResult.BLOCKED, ShotResult.SAVED],
         )
-        dribbles = players.calculate_metric_for_player_dataset(player_dataset, EventType.TAKE_ON, TakeOnResult.COMPLETE)
+        dribbles = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.TAKE_ON,
+            TakeOnResult.COMPLETE,
+        )
         key_passes = players.calculate_metric_for_player_dataset(
             player_dataset,
             EventType.PASS,
@@ -134,7 +145,11 @@ def extract_player_metrics(
         )
 
         # Distribution metrics
-        passes = players.calculate_metric_for_player_dataset(player_dataset, EventType.PASS, PassResult.COMPLETE)
+        passes = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            PassResult.COMPLETE,
+        )
         passing_accuracy = (
             passes / players.calculate_metric_for_player_dataset(player_dataset, EventType.PASS)
             if players.calculate_metric_for_player_dataset(player_dataset, EventType.PASS) > 0
@@ -191,15 +206,24 @@ def extract_player_metrics(
         )
 
         # Defensive metrics
-        balls_recovered = players.calculate_metric_for_player_dataset(player_dataset, EventType.RECOVERY)
+        balls_recovered = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.RECOVERY,
+        )
         tackles = players.calculate_metric_for_player_dataset(
             player_dataset,
             EventType.DUEL,
             DuelResult.WON,
             [DuelType.GROUND, DuelType.SLIDING_TACKLE],
         )
-        clearances = players.calculate_metric_for_player_dataset(player_dataset, EventType.CLEARANCE)
-        fouls_committed = players.calculate_metric_for_player_dataset(player_dataset, EventType.FOUL_COMMITTED)
+        clearances = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.CLEARANCE,
+        )
+        fouls_committed = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.FOUL_COMMITTED,
+        )
         yellow_cards = players.calculate_metric_for_player_dataset(
             player_dataset,
             EventType.CARD,

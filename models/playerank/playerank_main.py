@@ -1,6 +1,18 @@
 # Save ratings to output folder
 
 import pandas as pd
+from kloppy.domain import (
+    CardType,
+    CarryResult,
+    DuelResult,
+    DuelType,
+    EventDataset,
+    EventType,
+    PassResult,
+    PassType,
+    SetPieceType,
+    ShotResult,
+)
 from tqdm import tqdm
 
 from config import paths, players, tournaments
@@ -45,14 +57,16 @@ def load_feature_weights(feature_weights_filename: str = "feature_weights.json")
 
 
 def extract_player_metrics(
+    dataset: EventDataset,
     match_events_df: pd.DataFrame,
-    player_info_df: pd.DataFrame,
+    players_info_df: pd.DataFrame,
 ) -> dict[str, dict[str, str | int]]:
     """Extract player metrics: team, position, minutes played and event counts for each player in the match.
 
     Args:
+        dataset: The event dataset.
         match_events_df: DataFrame containing all events in the match.
-        player_info_df: DataFrame containing player information.
+        players_info_df: DataFrame containing player information.
 
     Returns:
         A dictionary mapping player nicknames to their metrics.
@@ -61,143 +75,185 @@ def extract_player_metrics(
     # Initialize dictionary to hold player metrics
     player_metrics = {}
 
-    # Map player names to their teams and minutes played for quick access
-    nickname_mapping = dict(zip(player_info_df["player_name"], player_info_df["nickname"]))
-    team_mapping = dict(zip(player_info_df["player_name"], player_info_df["team_name"]))
-    minutes_mapping = dict(zip(player_info_df["player_name"], player_info_df["minutes_played"]))
-
-    for player_name in match_events_df["player"].unique():
+    for idx, player_name in enumerate(players_info_df["player_name"]):
+        # Get specific player event data
+        player_dataset = dataset.filter(
+            lambda event, player_name=player_name: (
+                False if not hasattr(event.player, "name") else event.player.name == player_name
+            )
+        )
         player_events_df = match_events_df.loc[match_events_df["player"] == player_name]
 
-        # Use nickname, team and minutes mappings
-        player_nickname = nickname_mapping[player_name] or player_name
-        player_team = team_mapping[player_name]
-        player_minutes = minutes_mapping[player_name]
+        # Get nickname, team and minutes from players_info_df
+        player_nickname = players_info_df.at[idx, "nickname"] or player_name
+        player_team = players_info_df.at[idx, "team_name"]
+        player_minutes = players_info_df.at[idx, "minutes_played"]
 
         # Duel metrics
-        duel_aerial_success = len(
-            player_events_df.loc[
-                (player_events_df["event_type"] == "DUEL")
-                & (player_events_df["duel_type"] == "AERIAL")
-                & (player_events_df["success"])
-            ]
+        duel_aerial_success = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.DUEL,
+            DuelResult.WON,
+            DuelType.AERIAL,
         )
-        duel_aerial_failure = len(
-            player_events_df.loc[
-                (player_events_df["event_type"] == "DUEL")
-                & (player_events_df["duel_type"] == "AERIAL")
-                & (~player_events_df["success"])
-            ]
+        duel_aerial_failure = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.DUEL,
+            [DuelResult.LOST, DuelResult.NEUTRAL],
+            DuelType.AERIAL,
         )
-        duel_ground_success = len(
-            player_events_df.loc[
-                (player_events_df["event_type"] == "DUEL")
-                & (player_events_df["duel_type"].isin(["GROUND", "SLIDING_TACKLE"]))
-                & (player_events_df["success"])
-            ]
+        duel_ground_success = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.DUEL,
+            DuelResult.WON,
+            [DuelType.GROUND, DuelType.SLIDING_TACKLE],
         )
-        duel_ground_failure = len(
-            player_events_df.loc[
-                (player_events_df["event_type"] == "DUEL")
-                & (player_events_df["duel_type"].isin(["GROUND", "SLIDING_TACKLE"]))
-                & (~player_events_df["success"])
-            ]
+        duel_ground_failure = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.DUEL,
+            [DuelResult.LOST, DuelResult.NEUTRAL],
+            [DuelType.GROUND, DuelType.SLIDING_TACKLE],
         )
-        duel_loose_ball_success = len(
-            player_events_df.loc[
-                (player_events_df["event_type"] == "DUEL")
-                & (player_events_df["duel_type"] == "LOOSE_BALL")
-                & (player_events_df["success"])
-            ]
+        duel_loose_ball_success = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.DUEL,
+            DuelResult.WON,
+            DuelType.LOOSE_BALL,
         )
-        duel_loose_ball_failure = len(
-            player_events_df.loc[
-                (player_events_df["event_type"] == "DUEL")
-                & (player_events_df["duel_type"] == "LOOSE_BALL")
-                & (~player_events_df["success"])
-            ]
+        duel_loose_ball_failure = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.DUEL,
+            [DuelResult.LOST, DuelResult.NEUTRAL],
+            DuelType.LOOSE_BALL,
         )
 
         # Foul metrics
-        foul_committed = len(player_events_df.loc[player_events_df["event_type"] == "FOUL_COMMITTED"])
-        foul_commited_first_yellow = len(
-            player_events_df.loc[
-                (player_events_df["event_type"] == "FOUL_COMMITTED") & (player_events_df["card_type"] == "FIRST_YELLOW")
-            ]
+        foul_committed = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.FOUL_COMMITTED,
         )
-        foul_commited_second_yellow = len(
-            player_events_df.loc[
-                (player_events_df["event_type"] == "FOUL_COMMITTED")
-                & (player_events_df["card_type"] == "SECOND_YELLOW")
-            ]
+        foul_commited_first_yellow = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.FOUL_COMMITTED,
+            card_filter=CardType.FIRST_YELLOW,
         )
-        foul_commited_red = len(
-            player_events_df.loc[
-                (player_events_df["event_type"] == "FOUL_COMMITTED") & (player_events_df["card_type"] == "RED")
-            ]
+        foul_commited_second_yellow = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.FOUL_COMMITTED,
+            card_filter=CardType.SECOND_YELLOW,
+        )
+        foul_commited_red = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.FOUL_COMMITTED,
+            card_filter=CardType.RED,
         )
 
         # Set piece metrics
-        corner_kick_success = len(
-            player_events_df.loc[(player_events_df["set_piece_type"] == "CORNER_KICK") & (player_events_df["success"])]
+        corner_kick_success = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            PassResult.COMPLETE,
+            SetPieceType.CORNER_KICK,
         )
-        corner_kick_failure = len(
-            player_events_df.loc[(player_events_df["set_piece_type"] == "CORNER_KICK") & (~player_events_df["success"])]
+        corner_kick_failure = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            [PassResult.INCOMPLETE, PassResult.OUT, PassResult.OFFSIDE],
+            SetPieceType.CORNER_KICK,
         )
-        free_kick_success = len(
-            player_events_df.loc[(player_events_df["set_piece_type"] == "FREE_KICK") & (player_events_df["success"])]
+        free_kick_success = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            [EventType.PASS, EventType.SHOT],
+            [PassResult.COMPLETE, ShotResult.GOAL],
+            SetPieceType.FREE_KICK,
         )
-        free_kick_failure = len(
-            player_events_df.loc[(player_events_df["set_piece_type"] == "FREE_KICK") & (~player_events_df["success"])]
+        free_kick_failure = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            [EventType.PASS, EventType.SHOT],
+            [
+                PassResult.INCOMPLETE,
+                PassResult.OUT,
+                PassResult.OFFSIDE,
+                ShotResult.OFF_TARGET,
+                ShotResult.POST,
+                ShotResult.BLOCKED,
+                ShotResult.SAVED,
+            ],
+            SetPieceType.FREE_KICK,
         )
-        free_kick_pass_success = len(
-            player_events_df.loc[
-                (player_events_df["set_piece_type"] == "FREE_KICK")
-                & (player_events_df["event_type"] == "PASS")
-                & (player_events_df["success"])
-            ]
+        free_kick_pass_success = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            PassResult.COMPLETE,
+            SetPieceType.FREE_KICK,
         )
-        free_kick_pass_failure = len(
-            player_events_df.loc[
-                (player_events_df["set_piece_type"] == "FREE_KICK")
-                & (player_events_df["event_type"] == "PASS")
-                & (~player_events_df["success"])
-            ]
+        free_kick_pass_failure = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            [PassResult.INCOMPLETE, PassResult.OUT, PassResult.OFFSIDE],
+            SetPieceType.FREE_KICK,
         )
-        free_kick_shot_success = len(
-            player_events_df.loc[
-                (player_events_df["set_piece_type"] == "FREE_KICK")
-                & (player_events_df["event_type"] == "SHOT")
-                & (player_events_df["success"])
-            ]
+        free_kick_shot_success = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.SHOT,
+            ShotResult.GOAL,
+            SetPieceType.FREE_KICK,
         )
-        free_kick_shot_failure = len(
-            player_events_df.loc[
-                (player_events_df["set_piece_type"] == "FREE_KICK")
-                & (player_events_df["event_type"] == "SHOT")
-                & (~player_events_df["success"])
-            ]
+        free_kick_shot_failure = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.SHOT,
+            [
+                ShotResult.OFF_TARGET,
+                ShotResult.POST,
+                ShotResult.BLOCKED,
+                ShotResult.SAVED,
+            ],
+            SetPieceType.FREE_KICK,
         )
-        goal_kick = len(player_events_df.loc[player_events_df["set_piece_type"] == "GOAL_KICK"])
-        penalty = len(player_events_df.loc[(player_events_df["set_piece_type"] == "PENALTY")])
-        penalty_failure = len(
-            player_events_df.loc[(player_events_df["set_piece_type"] == "PENALTY") & (~player_events_df["success"])]
+        goal_kick = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            None,
+            qualifier_filter=SetPieceType.GOAL_KICK,
         )
-        throw_in_success = len(
-            player_events_df.loc[(player_events_df["set_piece_type"] == "THROW_IN") & (player_events_df["success"])]
+        penalty = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.SHOT,
+            qualifier_filter=SetPieceType.PENALTY,
         )
-        throw_in_failure = len(
-            player_events_df.loc[(player_events_df["set_piece_type"] == "THROW_IN") & (~player_events_df["success"])]
+        penalty_failure = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.SHOT,
+            [ShotResult.OFF_TARGET, ShotResult.POST, ShotResult.SAVED],
+            qualifier_filter=SetPieceType.PENALTY,
+        )
+        throw_in_success = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            PassResult.COMPLETE,
+            SetPieceType.THROW_IN,
+        )
+        throw_in_failure = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            [PassResult.INCOMPLETE, PassResult.OUT],
+            SetPieceType.THROW_IN,
         )
 
         # Carry, clearance, counter-attack and interception metrics
-        carry_success = len(
-            player_events_df.loc[(player_events_df["event_type"] == "CARRY") & (player_events_df["success"])]
+        carry_success = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.CARRY,
+            CarryResult.COMPLETE,
         )
-        carry_failure = len(
-            player_events_df.loc[(player_events_df["event_type"] == "CARRY") & (~player_events_df["success"])]
+        carry_failure = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.CARRY,
+            CarryResult.INCOMPLETE,
         )
-        clearance = len(player_events_df.loc[player_events_df["event_type"] == "CLEARANCE"])
+        clearance = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.CLEARANCE,
+        )
         clearance_success = len(
             player_events_df.loc[(player_events_df["event_type"] == "CLEARANCE") & (player_events_df["success"])]
         )
@@ -205,52 +261,124 @@ def extract_player_metrics(
             player_events_df.loc[(player_events_df["event_type"] == "CLEARANCE") & (~player_events_df["success"])]
         )
         counter_attack = len(player_events_df.loc[player_events_df["is_counter_attack"]])
-        interception = len(player_events_df.loc[player_events_df["event_type"] == "INTERCEPTION"])
+        interception = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.INTERCEPTION,
+        )
 
         # Pass metrics
-        cross_success = len(
-            player_events_df.loc[(player_events_df["pass_type"] == "CROSS") & (player_events_df["success"])]
+        cross_success = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            PassResult.COMPLETE,
+            PassType.CROSS,
         )
-        cross_failure = len(
-            player_events_df.loc[(player_events_df["pass_type"] == "CROSS") & (~player_events_df["success"])]
+        cross_failure = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            [
+                PassResult.INCOMPLETE,
+                PassResult.OUT,
+                PassResult.OFFSIDE,
+            ],
+            PassType.CROSS,
         )
-        head_pass_success = len(
-            player_events_df.loc[(player_events_df["pass_type"] == "HEAD_PASS") & (player_events_df["success"])]
+        head_pass_success = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            PassResult.COMPLETE,
+            PassType.HEAD_PASS,
         )
-        head_pass_failure = len(
-            player_events_df.loc[(player_events_df["pass_type"] == "HEAD_PASS") & (~player_events_df["success"])]
+        head_pass_failure = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            [
+                PassResult.INCOMPLETE,
+                PassResult.OUT,
+                PassResult.OFFSIDE,
+            ],
+            PassType.HEAD_PASS,
         )
-        high_pass_success = len(
-            player_events_df.loc[(player_events_df["pass_type"] == "HIGH_PASS") & (player_events_df["success"])]
+        high_pass_success = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            PassResult.COMPLETE,
+            PassType.HIGH_PASS,
         )
-        high_pass_failure = len(
-            player_events_df.loc[(player_events_df["pass_type"] == "HIGH_PASS") & (~player_events_df["success"])]
+        high_pass_failure = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            [
+                PassResult.INCOMPLETE,
+                PassResult.OUT,
+                PassResult.OFFSIDE,
+            ],
+            PassType.HIGH_PASS,
         )
-        launch_success = len(
-            player_events_df.loc[(player_events_df["pass_type"] == "LAUNCH") & (player_events_df["success"])]
+        launch_success = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            PassResult.COMPLETE,
+            PassType.LAUNCH,
         )
-        launch_failure = len(
-            player_events_df.loc[(player_events_df["pass_type"] == "LAUNCH") & (~player_events_df["success"])]
+        launch_failure = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            [
+                PassResult.INCOMPLETE,
+                PassResult.OUT,
+                PassResult.OFFSIDE,
+            ],
+            PassType.LAUNCH,
         )
-        simple_pass_success = len(
-            player_events_df.loc[(player_events_df["pass_type"] == "SIMPLE_PASS") & (player_events_df["success"])]
+        simple_pass_success = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            PassResult.COMPLETE,
+            PassType.SIMPLE_PASS,
         )
-        simple_pass_failure = len(
-            player_events_df.loc[(player_events_df["pass_type"] == "SIMPLE_PASS") & (~player_events_df["success"])]
+        simple_pass_failure = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            [
+                PassResult.INCOMPLETE,
+                PassResult.OUT,
+                PassResult.OFFSIDE,
+            ],
+            PassType.SIMPLE_PASS,
         )
-        smart_pass_success = len(
-            player_events_df.loc[(player_events_df["pass_type"] == "SMART_PASS") & (player_events_df["success"])]
+        smart_pass_success = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            PassResult.COMPLETE,
+            PassType.SMART_PASS,
         )
-        smart_pass_failure = len(
-            player_events_df.loc[(player_events_df["pass_type"] == "SMART_PASS") & (~player_events_df["success"])]
+        smart_pass_failure = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            [
+                PassResult.INCOMPLETE,
+                PassResult.OUT,
+                PassResult.OFFSIDE,
+            ],
+            PassType.SMART_PASS,
         )
 
         # Shot metrics
-        shot_success = len(
-            player_events_df.loc[(player_events_df["event_type"] == "SHOT") & (player_events_df["success"])]
+        shot_success = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.SHOT,
+            ShotResult.GOAL,
         )
-        shot_failure = len(
-            player_events_df.loc[(player_events_df["event_type"] == "SHOT") & (~player_events_df["success"])]
+        shot_failure = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.SHOT,
+            [
+                ShotResult.OFF_TARGET,
+                ShotResult.POST,
+                ShotResult.BLOCKED,
+                ShotResult.SAVED,
+            ],
         )
 
         player_metrics[player_nickname] = {
@@ -323,7 +451,7 @@ def calculate_playerank_scores(
     for player, metrics in player_metrics.items():
         playerank_score = (
             (
-                metrics["duel_aerial_success"]
+                int(metrics["duel_aerial_success"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Duel")
                     & (feature_weights_df["subevent"] == "Air duel")
@@ -332,7 +460,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["duel_aerial_failure"]
+                int(metrics["duel_aerial_failure"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Duel")
                     & (feature_weights_df["subevent"] == "Air duel")
@@ -341,7 +469,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["duel_ground_success"]
+                int(metrics["duel_ground_success"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Duel")
                     & (feature_weights_df["subevent"].isin(["Ground attacking duel", "Ground defending duel"]))
@@ -350,7 +478,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["duel_ground_failure"]
+                int(metrics["duel_ground_failure"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Duel")
                     & (feature_weights_df["subevent"].isin(["Ground attacking duel", "Ground defending duel"]))
@@ -359,7 +487,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["duel_loose_ball_success"]
+                int(metrics["duel_loose_ball_success"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Duel")
                     & (feature_weights_df["subevent"] == "Ground loose ball duel")
@@ -368,7 +496,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["duel_loose_ball_failure"]
+                int(metrics["duel_loose_ball_failure"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Duel")
                     & (feature_weights_df["subevent"] == "Ground loose ball duel")
@@ -377,35 +505,35 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["foul_committed"]
+                int(metrics["foul_committed"])
                 * feature_weights_df.loc[
                     feature_weights_df["event"] == "Foul",
                     "weight",
                 ].sum()
             )
             + (
-                metrics["foul_commited_first_yellow"]
+                int(metrics["foul_commited_first_yellow"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Foul") & (feature_weights_df["tag"] == "yellow card"),
                     "weight",
                 ].sum()
             )
             + (
-                metrics["foul_commited_second_yellow"]
+                int(metrics["foul_commited_second_yellow"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Foul") & (feature_weights_df["tag"] == "second yellow card"),
                     "weight",
                 ].sum()
             )
             + (
-                metrics["foul_commited_red"]
+                int(metrics["foul_commited_red"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Foul") & (feature_weights_df["tag"] == "red card"),
                     "weight",
                 ].sum()
             )
             + (
-                metrics["corner_kick_success"]
+                int(metrics["corner_kick_success"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Free Kick")
                     & (feature_weights_df["subevent"] == "Corner")
@@ -414,7 +542,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["corner_kick_failure"]
+                int(metrics["corner_kick_failure"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Free Kick")
                     & (feature_weights_df["subevent"] == "Corner")
@@ -423,7 +551,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["free_kick_success"]
+                int(metrics["free_kick_success"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Free Kick")
                     & (feature_weights_df["subevent"] == "Free Kick")
@@ -432,7 +560,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["free_kick_failure"]
+                int(metrics["free_kick_failure"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Free Kick")
                     & (feature_weights_df["subevent"] == "Free Kick")
@@ -441,7 +569,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["free_kick_pass_success"]
+                int(metrics["free_kick_pass_success"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Free Kick")
                     & (feature_weights_df["subevent"] == "Free kick cross")
@@ -450,7 +578,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["free_kick_pass_failure"]
+                int(metrics["free_kick_pass_failure"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Free Kick")
                     & (feature_weights_df["subevent"] == "Free kick cross")
@@ -459,7 +587,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["free_kick_shot_success"]
+                int(metrics["free_kick_shot_success"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Free Kick")
                     & (feature_weights_df["subevent"] == "Free kick shot")
@@ -468,7 +596,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["free_kick_shot_failure"]
+                int(metrics["free_kick_shot_failure"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Free Kick")
                     & (feature_weights_df["subevent"] == "Free kick shot")
@@ -477,21 +605,21 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["goal_kick"]
+                int(metrics["goal_kick"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Free Kick") & (feature_weights_df["subevent"] == "Goal kick"),
                     "weight",
                 ].sum()
             )
             + (
-                metrics["penalty"]
+                int(metrics["penalty"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Free Kick") & (feature_weights_df["subevent"] == "Penalty"),
                     "weight",
                 ].sum()
             )
             + (
-                metrics["penalty_failure"]
+                int(metrics["penalty_failure"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Free Kick")
                     & (feature_weights_df["subevent"] == "Penalty")
@@ -500,7 +628,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["throw_in_success"]
+                int(metrics["throw_in_success"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Free Kick")
                     & (feature_weights_df["subevent"] == "Throw in")
@@ -509,7 +637,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["throw_in_failure"]
+                int(metrics["throw_in_failure"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Free Kick")
                     & (feature_weights_df["subevent"] == "Throw in")
@@ -518,7 +646,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["carry_success"]
+                int(metrics["carry_success"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Others on the ball")
                     & (feature_weights_df["subevent"] == "Acceleration")
@@ -527,7 +655,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["carry_failure"]
+                int(metrics["carry_failure"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Others on the ball")
                     & (feature_weights_df["subevent"] == "Acceleration")
@@ -536,7 +664,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["clearance"]
+                int(metrics["clearance"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Others on the ball")
                     & (feature_weights_df["subevent"] == "Clearance"),
@@ -544,7 +672,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["clearance_success"]
+                int(metrics["clearance_success"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Others on the ball")
                     & (feature_weights_df["subevent"] == "Clearance")
@@ -553,7 +681,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["clearance_failure"]
+                int(metrics["clearance_failure"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Others on the ball")
                     & (feature_weights_df["subevent"] == "Clearance")
@@ -562,7 +690,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["counter_attack"]
+                int(metrics["counter_attack"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Others on the ball")
                     & (feature_weights_df["subevent"] == "Touch")
@@ -571,7 +699,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["interception"]
+                int(metrics["interception"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Others on the ball")
                     & (feature_weights_df["subevent"] == "Touch")
@@ -580,7 +708,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["cross_success"]
+                int(metrics["cross_success"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Pass")
                     & (feature_weights_df["subevent"] == "Cross")
@@ -589,7 +717,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["cross_failure"]
+                int(metrics["cross_failure"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Pass")
                     & (feature_weights_df["subevent"] == "Cross")
@@ -598,7 +726,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["head_pass_success"]
+                int(metrics["head_pass_success"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Pass")
                     & (feature_weights_df["subevent"] == "Head pass")
@@ -607,7 +735,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["head_pass_failure"]
+                int(metrics["head_pass_failure"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Pass")
                     & (feature_weights_df["subevent"] == "Head pass")
@@ -616,7 +744,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["high_pass_success"]
+                int(metrics["high_pass_success"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Pass")
                     & (feature_weights_df["subevent"] == "High pass")
@@ -625,7 +753,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["high_pass_failure"]
+                int(metrics["high_pass_failure"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Pass")
                     & (feature_weights_df["subevent"] == "High pass")
@@ -634,7 +762,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["launch_success"]
+                int(metrics["launch_success"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Pass")
                     & (feature_weights_df["subevent"] == "Launch")
@@ -643,7 +771,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["launch_failure"]
+                int(metrics["launch_failure"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Pass")
                     & (feature_weights_df["subevent"] == "Launch")
@@ -652,7 +780,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["simple_pass_success"]
+                int(metrics["simple_pass_success"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Pass")
                     & (feature_weights_df["subevent"] == "Simple pass")
@@ -661,7 +789,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["simple_pass_failure"]
+                int(metrics["simple_pass_failure"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Pass")
                     & (feature_weights_df["subevent"] == "Simple pass")
@@ -670,7 +798,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["smart_pass_success"]
+                int(metrics["smart_pass_success"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Pass")
                     & (feature_weights_df["subevent"] == "Smart pass")
@@ -679,7 +807,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["smart_pass_failure"]
+                int(metrics["smart_pass_failure"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Pass")
                     & (feature_weights_df["subevent"] == "Smart pass")
@@ -688,7 +816,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["shot_success"]
+                int(metrics["shot_success"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Shot")
                     & (feature_weights_df["subevent"] == "Shot")
@@ -697,7 +825,7 @@ def calculate_playerank_scores(
                 ].sum()
             )
             + (
-                metrics["shot_failure"]
+                int(metrics["shot_failure"])
                 * feature_weights_df.loc[
                     (feature_weights_df["event"] == "Shot")
                     & (feature_weights_df["subevent"] == "Shot")
@@ -796,9 +924,9 @@ def calculate_playerank_ratings(playerank_df: pd.DataFrame, alpha_goals: float =
 def get_match_playerank_scores(match_id: int):
     """Calculate PlayerRank scores for a specific match."""
     players_info_df = players.get_players_info(match_id)
-    _, match_events_df = players.load_match_data(match_id)
+    dataset, match_events_df = players.load_match_data(match_id)
 
-    player_metrics = extract_player_metrics(match_events_df, players_info_df)
+    player_metrics = extract_player_metrics(dataset, match_events_df, players_info_df)
     feature_weights_df = load_feature_weights()
 
     playerank_df = calculate_playerank_scores(player_metrics, feature_weights_df)
@@ -972,8 +1100,6 @@ def main():
         ncols=150,
     ):
         get_tournament_playerank_scores(tournament)
-
-    pass
 
 
 if __name__ == "__main__":

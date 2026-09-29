@@ -5,7 +5,17 @@ Module to calculate the EA Sports Player Performance Index (PPI) for any match a
 import warnings
 
 import pandas as pd
-from kloppy.domain import EventDataset
+from kloppy.domain import (
+    CardType,
+    DuelResult,
+    EventDataset,
+    EventType,
+    InterceptionResult,
+    PassResult,
+    PassType,
+    ShotResult,
+    TakeOnResult,
+)
 from tqdm import tqdm
 
 from config import paths, players, tournaments
@@ -43,49 +53,25 @@ CLEAN_SHEET_POINTS = {"Goalkeeper": 0.585, "Defender": 0.364, "Midfielder": 0.15
 INDEX_WEIGHTS = {"I1": 0.25, "I2": 0.375, "I3": 0.125, "I4": 0.125, "I5": 0.0625, "I6": 0.0625}
 
 
-def get_player_position_group(dataset: EventDataset, player_name: str) -> str:
-    """
-    Determine the main position group of a player based on time spent in each position.
-
-    Args:
-        dataset: The event dataset containing player position data.
-        player_name: The name of the player.
-
-    Returns:
-        The main position group of the player as a string.
-    """
-    player_position = ("", 0)
-
-    # Iterate through dataset to find player's position history
-    for team in dataset.metadata.teams:
-        for player in team.players:
-            # Only get position for the specified player
-            if player.name == player_name:
-                for start_time, end_time, position in player.positions.ranges():
-                    position_duration = (end_time - start_time).total_seconds()
-                    position_group = position.position_group.name
-
-                    # Compare and update the variable if this position has longer duration
-                    prev_position, prev_duration = player_position
-                    if position_group != prev_position and position_duration > prev_duration:
-                        player_position = (position_group, position_duration)
-
-    # Return only the position name
-    return player_position[0]
-
-
-def calculate_tackle_win_ratio(team_events_df: pd.DataFrame) -> float:
+def calculate_tackle_win_ratio(team_dataset: EventDataset) -> float:
     """
     Calculate the tackle win ratio for a team.
 
     Args:
-        team_events_df: DataFrame containing events for the team.
+        team_dataset: The event dataset containing team data.
 
     Returns:
         The tackle win ratio as a float rounded to two decimal places.
     """
-    total_duels = len(team_events_df.loc[team_events_df["event_type"] == "DUEL"])
-    successful_duels = len(team_events_df.loc[(team_events_df["event_type"] == "DUEL") & (team_events_df["success"])])
+    total_duels = players.calculate_metric_for_player_dataset(
+        team_dataset,
+        EventType.DUEL,
+    )
+    successful_duels = players.calculate_metric_for_player_dataset(
+        team_dataset,
+        EventType.DUEL,
+        DuelResult.WON,
+    )
 
     if total_duels == 0:
         return 0.0
@@ -95,57 +81,76 @@ def calculate_tackle_win_ratio(team_events_df: pd.DataFrame) -> float:
 
 def extract_player_metrics(
     dataset: EventDataset,
-    match_events_df: pd.DataFrame,
-    player_info_df: pd.DataFrame,
+    players_info_df: pd.DataFrame,
 ) -> dict[str, dict[str, str | int]]:
     """
     Extract player metrics: minutes played, goals, assists, crosses, dribbles and passes.
 
     Args:
         dataset: The event dataset containing player data.
-        match_events_df: DataFrame containing all events in the match.
-        player_info_df: DataFrame containing player information.
+        players_info_df: DataFrame containing player information.
 
     Returns:
         A dictionary mapping player nicknames to their metrics.
     """
     player_metrics = {}
 
-    # Map player names to their teams and minutes played for quick access
-    nickname_mapping = dict(zip(player_info_df["player_name"], player_info_df["nickname"]))
-    team_mapping = dict(zip(player_info_df["player_name"], player_info_df["team_name"]))
-    minutes_mapping = dict(zip(player_info_df["player_name"], player_info_df["minutes_played"]))
-
-    # Get assists count for all players in the match
-    assists_mapping = players.count_assists(match_events_df)
+    # Get player position mapping
+    players_position_dict = players.get_players_position_group(dataset)
 
     # Get unique teams to identify opponent team
-    teams = player_info_df["team_name"].unique()
+    teams = players_info_df["team_name"].unique()
 
-    for player_name in match_events_df["player"].unique():
-        match_events_df = match_events_df.loc[match_events_df["player"] == player_name]
+    for idx, player_name in enumerate(players_info_df["player_name"]):
+        # Get specific player event data
+        player_dataset = dataset.filter(
+            lambda event, player_name=player_name: (
+                False if not hasattr(event.player, "name") else event.player.name == player_name
+            )
+        )
 
-        # Use nickname, team and minutes mappings
-        player_nickname = nickname_mapping[player_name] or player_name
-        player_team = team_mapping[player_name]
+        # Get nickname, team and minutes from players_info_df
+        player_nickname = players_info_df.at[idx, "nickname"] or player_name
+        player_team = players_info_df.at[idx, "team_name"]
+        player_minutes = players_info_df.at[idx, "minutes_played"]
         opponent_team = teams[teams != player_team].item()
-        player_minutes = minutes_mapping[player_name]
 
         # Get player metrics
-        goals = len(
-            match_events_df.loc[(match_events_df["event_type"] == "SHOT") & (match_events_df["result"] == "GOAL")]
+        goals = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.SHOT,
+            ShotResult.GOAL,
         )
-        crosses = len(match_events_df.loc[(match_events_df["pass_type"] == "CROSS") & (match_events_df["success"])])
-        dribbles = len(match_events_df.loc[(match_events_df["event_type"] == "TAKE_ON") & (match_events_df["success"])])
-        passes = len(match_events_df.loc[(match_events_df["event_type"] == "PASS") & (match_events_df["success"])])
+        assists = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            PassResult.COMPLETE,
+            PassType.ASSIST,
+        )
+        crosses = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            PassResult.COMPLETE,
+            PassType.CROSS,
+        )
+        dribbles = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.TAKE_ON,
+            TakeOnResult.COMPLETE,
+        )
+        passes = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            PassResult.COMPLETE,
+        )
 
         player_metrics[player_nickname] = {
             "team": player_team,
             "opponent_team": opponent_team,
-            "position": get_player_position_group(dataset, player_name),
+            "position": players_position_dict[player_name],
             "minutes_played": player_minutes,
             "goals": goals,
-            "assists": assists_mapping.get(player_name, 0),
+            "assists": assists,
             "crosses": crosses,
             "dribbles": dribbles,
             "passes": passes,
@@ -155,14 +160,14 @@ def extract_player_metrics(
 
 
 def extract_team_metrics(
-    match_events_df: pd.DataFrame,
+    dataset: EventDataset,
     team_minutes_dict: dict[str, int],
 ) -> dict[str, dict[str, str | int | float]]:
     """
     Extract team metrics: total minutes, goals, yellow cards, red cards, interceptions, clearances, tackle win ratio.
 
     Args:
-        match_events_df: DataFrame containing all events in the match.
+        dataset: EventDataset containing the match data.
         team_minutes_dict: Dictionary mapping team names to total minutes played.
 
     Returns:
@@ -170,34 +175,49 @@ def extract_team_metrics(
     """
     team_metrics = {}
 
-    for team in match_events_df["team"].unique():
-        team_events_df = match_events_df[match_events_df["team"] == team]
+    for team in dataset.metadata.teams:
+        # Get specific team event data
+        team_name = team.name
+        team_dataset = dataset.filter(
+            lambda event, team_name=team_name: (
+                False if not hasattr(event.player, "name") else event.player.team.name == team_name
+            )
+        )
 
         # Get team metrics
-        goals = len(team_events_df.loc[(team_events_df["event_type"] == "SHOT") & (team_events_df["result"] == "GOAL")])
-        yellow_cards = len(
-            team_events_df.loc[
-                (team_events_df["event_type"] == "CARD") & (team_events_df["card_type"] == "FIRST_YELLOW")
-            ]
+        goals = players.calculate_metric_for_player_dataset(
+            team_dataset,
+            EventType.SHOT,
+            ShotResult.GOAL,
         )
-        red_cards = len(
-            team_events_df.loc[
-                (team_events_df["event_type"] == "CARD") & (team_events_df["card_type"].isin(["RED", "SECOND_YELLOW"]))
-            ]
+        yellow_cards = players.calculate_metric_for_player_dataset(
+            team_dataset,
+            EventType.CARD,
+            card_filter=CardType.FIRST_YELLOW,
         )
-        interceptions = len(
-            team_events_df.loc[(team_events_df["event_type"] == "INTERCEPTION") & (team_events_df["success"])]
+        red_cards = players.calculate_metric_for_player_dataset(
+            team_dataset,
+            EventType.CARD,
+            card_filter=[CardType.SECOND_YELLOW, CardType.RED],
         )
-        clearances = len(team_events_df.loc[team_events_df["event_type"] == "CLEARANCE"])
+        interceptions = players.calculate_metric_for_player_dataset(
+            team_dataset,
+            EventType.INTERCEPTION,
+            InterceptionResult.SUCCESS,
+        )
+        clearances = players.calculate_metric_for_player_dataset(
+            team_dataset,
+            EventType.CLEARANCE,
+        )
 
-        team_metrics[team] = {
-            "total_minutes": team_minutes_dict[team],
+        team_metrics[team_name] = {
+            "total_minutes": team_minutes_dict[team_name],
             "goals": goals,
             "yellow_cards": yellow_cards,
             "red_cards": red_cards,
             "interceptions": interceptions,
             "clearances": clearances,
-            "tackle_win_ratio": calculate_tackle_win_ratio(team_events_df),
+            "tackle_win_ratio": calculate_tackle_win_ratio(team_dataset),
         }
 
     return team_metrics
@@ -314,11 +334,11 @@ def get_match_ppi_scores(match_id: int) -> pd.DataFrame:
     team_minutes_dict = players_info_df.groupby("team_name")["minutes_played"].sum().to_dict()  # type: ignore
 
     # Load match data
-    dataset, match_events_df = players.load_match_data(match_id)
+    dataset, _ = players.load_match_data(match_id)
 
     # Extract metrics
-    player_metrics = extract_player_metrics(dataset, match_events_df, players_info_df)
-    team_metrics = extract_team_metrics(match_events_df, team_minutes_dict)  # type: ignore
+    player_metrics = extract_player_metrics(dataset, players_info_df)
+    team_metrics = extract_team_metrics(dataset, team_minutes_dict)  # type: ignore
 
     # Calculate PPI for players
     ppi_df = calculate_players_performance_index(player_metrics, team_metrics)

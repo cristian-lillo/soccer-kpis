@@ -7,7 +7,19 @@ This script calculates Opta Points for soccer players based on their match perfo
 import warnings
 
 import pandas as pd
-from kloppy.domain import EventDataset, EventType
+from kloppy.domain import (
+    CardType,
+    DuelResult,
+    DuelType,
+    EventDataset,
+    EventType,
+    GoalkeeperActionType,
+    InterceptionResult,
+    PassResult,
+    PassType,
+    SetPieceType,
+    ShotResult,
+)
 from tqdm import tqdm
 
 from config import paths, players, tournaments
@@ -176,7 +188,7 @@ def count_penalties_won(match_events_df: pd.DataFrame) -> dict[str, int]:
 def extract_player_metrics(
     dataset: EventDataset,
     match_events_df: pd.DataFrame,
-    player_info_df: pd.DataFrame,
+    players_info_df: pd.DataFrame,
     player_positions_dict: dict[str, str],
 ) -> dict[str, dict[str, str | int]]:
     """
@@ -185,7 +197,7 @@ def extract_player_metrics(
     Args:
         dataset: The event dataset.
         match_events_df: DataFrame containing all events in the match.
-        player_info_df: DataFrame containing player information.
+        players_info_df: DataFrame containing player information.
         player_positions_dict: A dictionary mapping player names to their position category.
 
     Returns:
@@ -193,117 +205,147 @@ def extract_player_metrics(
     """
     player_metrics = {}
 
-    # Map player names to their teams and minutes played for quick access
-    nickname_mapping = dict(zip(player_info_df["player_name"], player_info_df["nickname"]))
-    team_mapping = dict(zip(player_info_df["player_name"], player_info_df["team_name"]))
-    minutes_mapping = dict(zip(player_info_df["player_name"], player_info_df["minutes_played"]))
-
-    # Count assists for all players in the match
-    assists_mapping = players.count_assists(match_events_df)
-
     # Execute helper functions
     offsides_mapping = count_player_offsides(dataset, match_events_df)
     team_goals_conceded = get_team_conceded_goals(match_events_df)
     penalties_won_mapping = count_penalties_won(match_events_df)
 
-    for player_name in match_events_df["player"].unique():
+    for idx, player_name in enumerate(players_info_df["player_name"]):
         # Get specific player event data
+        player_dataset = dataset.filter(
+            lambda event, player_name=player_name: (
+                False if not hasattr(event.player, "name") else event.player.name == player_name
+            )
+        )
         player_df = match_events_df.loc[match_events_df["player"] == player_name]
 
-        # Use nickname, team and minutes mappings
-        player_nickname = nickname_mapping[player_name] or player_name
-        player_team = team_mapping[player_name]
-        player_minutes = minutes_mapping[player_name]
+        # Get nickname, team and minutes from players_info_df
+        player_nickname = players_info_df.at[idx, "nickname"] or player_name
+        player_team = players_info_df.at[idx, "team_name"]
+        player_minutes = players_info_df.at[idx, "minutes_played"]
 
         # Goals (G)
-        goals = len(player_df.loc[(player_df["event_type"] == "SHOT") & (player_df["result"] == "GOAL")])
+        goals = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.SHOT,
+            ShotResult.GOAL,
+        )
 
         # Shots on target (SonT)
-        shots_on_target = len(
-            player_df.loc[
-                (player_df["event_type"] == "SHOT") & (player_df["result"].isin(["GOAL", "BLOCKED", "SAVED"]))
-            ]
+        shots_on_target = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.SHOT,
+            [ShotResult.GOAL, ShotResult.BLOCKED, ShotResult.SAVED],
         )
 
         # Shots off target (SoffT)
-        shots_off_target = len(
-            player_df.loc[(player_df["event_type"] == "SHOT") & (player_df["result"].isin(["OFF_TARGET", "POST"]))]
+        shots_off_target = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.SHOT,
+            [ShotResult.OFF_TARGET, ShotResult.POST],
         )
 
         # Blocked shots (BS)
         # This is a subset of Shots on Target (SonT)
-        blocked_shots = len(player_df.loc[(player_df["event_type"] == "SHOT") & (player_df["result"] == "BLOCKED")])
+        blocked_shots = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.SHOT,
+            ShotResult.BLOCKED,
+        )
 
         # Own goals (OG)
-        own_goals = len(player_df.loc[(player_df["event_type"] == "SHOT") & (player_df["result"] == "OWN_GOAL")])
+        own_goals = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.SHOT,
+            ShotResult.OWN_GOAL,
+        )
 
         # Assists (A)
-        assists = assists_mapping.get(player_name, 0)
+        assists = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            PassResult.COMPLETE,
+            PassType.ASSIST,
+        )
 
         # Passes (P)
-        passes = len(
-            player_df.loc[
-                (player_df["event_type"] == "PASS")
-                & (player_df["success"])
-                & (~player_df["pass_type"].isin(["CROSS", "HAND_PASS"]))
-                & (player_df["set_piece_type"] != "THROW_IN")
-            ]
+        passes = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            PassResult.COMPLETE,
+            qualifier_filter=[PassType.CROSS, PassType.HAND_PASS, SetPieceType.THROW_IN],
+            exclude_qualifier=True,
         )
 
         # Crosses (C)
-        crosses = len(
-            player_df.loc[
-                (player_df["event_type"] == "PASS") & (player_df["pass_type"] == "CROSS") & (player_df["success"])
-            ]
+        crosses = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.PASS,
+            PassResult.COMPLETE,
+            PassType.CROSS,
         )
 
         # Tackles (Tk)
-        tackles = len(
-            player_df.loc[
-                (player_df["event_type"] == "DUEL") & (player_df["duel_type"].isin(["TACKLE", "SLIDING_TACKLE"]))
-            ]
+        tackles = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.DUEL,
+            DuelResult.WON,
+            qualifier_filter=[DuelType.GROUND, DuelType.SLIDING_TACKLE],
         )
 
         # Interceptions (INT)
-        interceptions = len(player_df.loc[(player_df["event_type"] == "INTERCEPTION") & (player_df["success"])])
+        interceptions = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.INTERCEPTION,
+            InterceptionResult.SUCCESS,
+        )
 
         # Fouls won (FW)
         fouls_won = len(player_df.loc[(player_df["event_type"] == "GENERIC:Foul Won")])
 
         # Fouls conceded (FC)
-        fouls_conceded = len(player_df.loc[(player_df["event_type"] == "FOUL_COMMITED")])
+        fouls_conceded = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.FOUL_COMMITTED,
+        )
 
         # Offsides (O)
         offsides = offsides_mapping.get(player_name, 0)
 
         # Yellow cards (YC)
-        yellow_cards = len(
-            player_df.loc[(player_df["event_type"] == "CARD") & (player_df["card_type"] == "FIRST_YELLOW")]
+        yellow_cards = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.CARD,
+            card_filter=CardType.FIRST_YELLOW,
         )
 
         # Red cards (RC)
-        red_cards = len(
-            player_df.loc[(player_df["event_type"] == "CARD") & (player_df["card_type"].isin(["SECOND_YELLOW", "RED"]))]
+        red_cards = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.CARD,
+            card_filter=[CardType.SECOND_YELLOW, CardType.RED],
         )
 
         # Goals conceded (GC)
-        goals_conceded = team_goals_conceded[player_team]
+        goals_conceded = team_goals_conceded[str(player_team)]
 
         # Penalties won (PW)
         # This is a subset of Fouls won (FW)
         penalties_won = penalties_won_mapping.get(player_name, 0)
 
         # Saves (SAV)
-        saves = len(player_df.loc[(player_df["event_type"] == "GOALKEEPER") & (player_df["goalkeeper_type"] == "SAVE")])
+        saves = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.GOALKEEPER,
+            qualifier_filter=GoalkeeperActionType.SAVE,
+        )
 
         # Penalties saved (PS)
         # This is a subset of Saves (SAV)
-        penalties_saved = len(
-            player_df.loc[
-                (player_df["event_type"] == "GOALKEEPER")
-                & (player_df["goalkeeper_type"] == "SAVE")
-                & (player_df["set_piece_type"] == "PENALTY")
-            ]
+        penalties_saved = players.calculate_metric_for_player_dataset(
+            player_dataset,
+            EventType.GOALKEEPER,
+            qualifier_filter=[GoalkeeperActionType.SAVE, SetPieceType.PENALTY],
         )
 
         player_metrics[player_nickname] = {

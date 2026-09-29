@@ -23,18 +23,6 @@ warnings.filterwarnings(
     category=UserWarning,
 )
 
-# Constants for Plus-Minus calculations
-RHO_2 = 300.0
-RHO_3 = 300.0
-RHO_4 = 2.5
-
-# Factor are not defined. Won't be used in the current implementation, but kept for future reference.
-NUMBER_OF_RED_CARDS = [1, 2, 3, 4]
-RED_FACTOR_OFFENSIVE_HOME = {1: 0.1, 2: 0.2, 3: 0.3, 4: 0.4}
-RED_FACTOR_DEFENSIVE_HOME = {1: 0.05, 2: 0.1, 3: 0.15, 4: 0.2}
-RED_FACTOR_OFFENSIVE_AWAY = {1: 0.08, 2: 0.16, 3: 0.24, 4: 0.32}
-RED_FACTOR_DEFENSIVE_AWAY = {1: 0.04, 2: 0.08, 3: 0.12, 4: 0.16}
-
 
 def get_match_start_and_end_times(dataset: EventDataset) -> tuple[str, str]:
     """Retrieve the start and end times of a match from the dataset."""
