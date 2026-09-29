@@ -143,7 +143,7 @@ def get_players_position_group(dataset: EventDataset) -> dict[str, str]:
 
 def calculate_metric_for_player_dataset(
     dataset: EventDataset,
-    type_filter: EventType,
+    type_filter: list[EventType] | EventType | None = None,
     result_filter: list[ResultType] | ResultType | None = None,
     qualifier_filter: list[Enum] | Enum | None = None,
     card_filter: list[CardType] | CardType | None = None,
@@ -166,11 +166,13 @@ def calculate_metric_for_player_dataset(
 
     def compare_type_filter(
         event_type: EventType,
-        type_filter: EventType | None,
+        type_filter: list[EventType] | EventType | None,
     ) -> bool:
         """Compare the event type with the type filter."""
         if type_filter is None:
             return True
+        if isinstance(type_filter, list):
+            return event_type in type_filter
         return event_type == type_filter
 
     def compare_result_filter(
